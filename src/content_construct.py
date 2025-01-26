@@ -42,7 +42,7 @@ def splitTexBy(content: str, label: str):
     matches = re.finditer(pattern, content)
 
     result = [match.group(0).strip() for match in matches]
-    result = list(filter(lambda x: x, result))
+    result = filter(lambda x: x, result)
     return result
 
 
@@ -52,7 +52,7 @@ def splitTexBySection(content: str):
         ret = itertools.chain.from_iterable(
             map(lambda x: splitTexBy(x, sectionOrder[i]), ret)
         )
-    return list(ret)
+    return ret
 
 
 def splitTexByEnv(content: str):
@@ -74,9 +74,7 @@ def splitTexByEnv(content: str):
 
 
 def splitTexByPar(content: str):
-    return list(
-        filter(lambda x: x.strip(), map(lambda x: x.strip(), content.split("\n\n")))
-    )
+    return filter(lambda x: x.strip(), map(lambda x: x.strip(), content.split("\n\n")))
 
 
 def split_book(mainPath: str, maxChunkSize: int):
@@ -107,8 +105,6 @@ def split_book(mainPath: str, maxChunkSize: int):
 
     # Split each environment part by paragraphs
     parParts = itertools.chain.from_iterable(map(splitTexByPar, envParts))
-    # Convert to list and write to file for inspection
-    parParts = list(parParts)
 
     ret: list[str] = []
     currentChunk = ""

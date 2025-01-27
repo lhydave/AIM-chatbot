@@ -35,6 +35,15 @@ def stripDocument(content: str) -> str:
         return content.strip()
 
 
+def stripAppendix(content: str) -> str:
+    pattern = r"([\s\S]*?)\\appendix[\s\S]*"
+    match = re.match(pattern, content)
+    if match:
+        return match.group(1).strip()
+    else:
+        return content.strip()
+
+
 def splitTexBy(content: str, label: str):
     # Find all \label{xxx} patterns
     pattern = r"(\\label\{[\s\S]*?\}[\s\S]*?|[\s\S]+?)(?=\\label\{|$)"
@@ -91,11 +100,14 @@ def split_book(mainPath: str, maxChunkSize: int):
     except IOError as e:
         raise IOError(f"Error reading file {mainPath}: {str(e)}")
 
-    # Merge all tex files into one
-    mainContent = multiTex2Single(mainDir, mainContent)
-
     # Strip document environment
     mainContent = stripDocument(mainContent)
+
+    # Strip the appendix
+    mainContent = stripAppendix(mainContent)
+
+    # Merge all tex files into one
+    mainContent = multiTex2Single(mainDir, mainContent)
 
     # Split by sections
     sectionParts = splitTexBySection(mainContent)
@@ -118,7 +130,7 @@ def split_book(mainPath: str, maxChunkSize: int):
 
         if len(part) >= maxChunkSize:  # the part itself is too big
             ret.extend(textwrap.wrap(part, maxChunkSize))
-        else: # just good
+        else:  # just good
             ret.append(part)
     return ret
 
@@ -127,7 +139,7 @@ if __name__ == "__main__":
     from config import *
 
     # Split the book and write chunks to file
-    chunks = split_book(textbookMainPath, maxChunkSize)
+    chunks = split_book(TEXTBOOK_MAIN_PATH, MAX_CHUNK_SIZE)
     with open("book_chunks.txt", "w", encoding="utf-8") as f:
         for i, chunk in enumerate(chunks):
             f.write(f"=== Chunk {i} ===\n{chunk}\n\n")

@@ -54,7 +54,7 @@ some good things!
 \section{better}
 some better things!"""
     label = "section"
-    ret = splitTexBy(content, label)
+    ret = list(splitTexBy(content, label))
     assert ret == [
         r"""\chapter{aaaa}
 not good""",
@@ -127,29 +127,29 @@ def test_splitTexByEnv_only_text():
 
 def test_splitTexByEnv_empty():
     content = ""
-    ret = splitTexByEnv(content)
+    ret = list(splitTexByEnv(content))
     assert ret == []
 def test_splitTexByPar_basic():
     content = "First paragraph\n\nSecond paragraph\n\nThird paragraph"
-    ret = splitTexByPar(content)
+    ret = list(splitTexByPar(content))
     assert ret == ["First paragraph", "Second paragraph", "Third paragraph"]
 
 def test_splitTexByPar_with_multiple_newlines():
     content = "First\n\n\nSecond\n\n\n\nThird"
-    ret = splitTexByPar(content)
+    ret = list(splitTexByPar(content))
     assert ret == ["First", "Second", "Third"]
 
 def test_splitTexByPar_with_empty_paragraphs():
     content = "First\n\n\n\nSecond"
-    ret = splitTexByPar(content)
+    ret = list(splitTexByPar(content))
     assert ret == ["First", "Second"]
 
 def test_splitTexByPar_single_paragraph():
     content = "Just one paragraph"
-    ret = splitTexByPar(content)
+    ret = list(splitTexByPar(content))
     assert ret == ["Just one paragraph"]
 
 def test_splitTexByPar_empty():
     content = ""
-    ret = splitTexByPar(content)
+    ret = list(splitTexByPar(content))
     assert ret == []

@@ -86,9 +86,9 @@ def splitTexByPar(content: str):
     return filter(lambda x: x.strip(), map(lambda x: x.strip(), content.split("\n\n")))
 
 
-def split_book(mainPath: str, maxChunkSize: int):
+def split_single_file(mainPath: str, maxChunkSize: int):
     """
-    split the whole book into pieces
+    split the single tex file into pieces
     """
     # Read and process the main file
     mainDir = os.path.dirname(mainPath)
@@ -135,11 +135,18 @@ def split_book(mainPath: str, maxChunkSize: int):
     return ret
 
 
+def split_contents(contentPaths: list[str], maxChunkSize: int):
+    ret: list[str] = []
+    for contentPath in contentPaths:
+        ret.extend(split_single_file(contentPath, maxChunkSize))
+    return ret
+
+
 if __name__ == "__main__":
     from config import *
 
     # Split the book and write chunks to file
-    chunks = split_book(TEXTBOOK_MAIN_PATH, MAX_CHUNK_SIZE)
+    chunks = split_contents(TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE)
     with open("book_chunks.txt", "w", encoding="utf-8") as f:
         for i, chunk in enumerate(chunks):
             f.write(f"=== Chunk {i} ===\n{chunk}\n\n")

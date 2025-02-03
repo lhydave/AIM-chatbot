@@ -108,11 +108,11 @@ def constructChatEngine(query_engine: BaseQueryEngine):
 
 
 if __name__ == "__main__":
-    from content_construct import split_book
-    from config import TEXTBOOK_MAIN_PATH, MAX_CHUNK_SIZE
+    from content_construct import split_contents
+    from config import TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE
 
     print("Book splitting started...")
-    bookSplitted = split_book(TEXTBOOK_MAIN_PATH, MAX_CHUNK_SIZE)
+    bookSplitted = split_contents(TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE)
     print("Book splitting completed.")
     print("Vector database construction started...")
     queryEngine = constructVecDB(bookSplitted)

@@ -3,8 +3,8 @@ Create the Web UI for the chatbot.
 """
 
 import streamlit as st
-from content_construct import split_book
-from config import TEXTBOOK_MAIN_PATH, MAX_CHUNK_SIZE  # 从config导入预设配置
+from content_construct import split_contents
+from config import TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE  # 从config导入预设配置
 from RAG import constructVecDB, constructChatEngine
 from util import processResponse
 import os
@@ -23,7 +23,7 @@ st.set_page_config(
 def init_system():
     try:
         # 分割教材
-        bookSplitted = split_book(TEXTBOOK_MAIN_PATH, MAX_CHUNK_SIZE)
+        bookSplitted = split_contents(TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE)
 
         # 构建向量数据库
         query_engine = constructVecDB(bookSplitted)

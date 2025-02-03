@@ -56,6 +56,8 @@ LATEX_MACROS = {
 LATEX_COMMANDS = {
     "\\norm": (1, "\\left\\|{#1}\\right\\|"),
     "\\inner": (2, "\\left\\langle{#1},{#2}\\right\\rangle"),
+    "\\light": (1, "\\textcolor{Orchid}{#1}"),
+    "\\contrastlight": (1, "\\textcolor{TealBlue}{#1}")
 }
 
 

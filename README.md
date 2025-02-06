@@ -14,8 +14,8 @@
 ## 系统要求
 
 - conda 24.5.0（推荐这个版本，其他版本未经过测试）
-- Jina API Key（向量数据库的 embedding 模型）
-- deepseek API Key（LLM）
+- Jina API Key（向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取）
+- deepseek API Key（LLM，从[这个链接](http://platform.deepseek.com)获取）
 - Anaconda 或 Miniconda
 
 ## 安装步骤

@@ -13,16 +13,20 @@ sectionOrder = ("part", "chapter", "section", "subsection")
 def multiTex2Single(mainDir: str, mainContent: str):
     # Find all \input{xxx} patterns
     pattern = r"\\(?:input|include)\{([^}]+)\}"
-    matches = re.finditer(pattern, mainContent)
-
-    # Replace each match with the content of referenced file
     result = mainContent
-    for match in matches:
-        filepath = os.path.join(mainDir, match.group(1) + ".tex")
-        with open(filepath, "r", encoding="utf-8") as f:
-            content = f.read()
-        result = result.replace(match.group(0), content)
+    while True:
+        matches = re.finditer(pattern, result)
+        is_empty = True
 
+        # Replace each match with the content of referenced file
+        for match in matches:
+            is_empty = False
+            filepath = os.path.join(mainDir, match.group(1) + ".tex")
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+            result = result.replace(match.group(0), content)
+        if is_empty:
+            break
     return result
 
 

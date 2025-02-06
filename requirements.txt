@@ -1,0 +1,2 @@
+llama_index==0.12.16
+streamlit==1.41.1

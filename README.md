@@ -22,7 +22,7 @@
 
 1. 克隆项目仓库：
 ```bash
-git clone <仓库地址>
+git clone https://github.com/lhydave/AIM-chatbot.git
 cd AIM-chatbot
 ```
 

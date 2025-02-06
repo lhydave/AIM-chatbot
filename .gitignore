@@ -6,3 +6,4 @@ __pycache__/
 venv/
 book_chunks.txt
 .pytest_cache
+storage/

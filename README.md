@@ -39,7 +39,7 @@ pip install -r requirements.txt
 
 4. 配置环境：
 - 在 `src/config.py` 中写入教材文件（如果有多个，只列举出现了 `\documentclass` 的主文件）
-- 在 `src/config.py` 中配置相关 API 密钥和相关模型名称
+- 在 `src/config.py` 中配置相关 API 密钥
 
 ## 运行应用
 
@@ -76,13 +76,13 @@ AIM-chatbot/
 
 ### 模型（参数）选择
 
-你可以自由选择 Jina 的 embedding 模型和 deepseek 的大语言模型，只需在 `src/config.py` 中修改相关配置即可，例如，你可以将 LLM 改为 `deepseek-reasoner`，就可以使用 deepseek R1 模型。
+你可以自由选择 Jina 的 embedding 模型和 deepseek 的大语言模型，只需在 `src/config.py` 中修改相关配置即可，例如，你可以将 `LLM_MODEL` 改为 `deepseek-reasoner`，就可以使用 deepseek R1 模型。
 
 此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `LLM_TEMPERATURE` 即可，数值范围为 0 到 2。
 
 ### 自定义 LaTeX 宏
 
-你可以自由定制 LaTeX 的宏定义（即类似 `\newcommand` 或 `DeclareMathOperator` 的命令），这样对话系统可以正确显示这些 latex 数学公式。要做到这一点，只需在 `src/util.py` 中修改 `LATEX_MACROS` 或 `LATEX_COMMANDS` 即可，格式请参考当前的定义。
+你可以自由定制 LaTeX 的宏定义（即类似 `\newcommand` 或 `\DeclareMathOperator` 的命令），这样对话系统可以正确显示这些 latex 数学公式。要做到这一点，只需在 `src/util.py` 中修改 `LATEX_MACROS` 或 `LATEX_COMMANDS` 即可，格式请参考当前的定义。
 
 ### 选择 tex 素材文件
 
@@ -110,6 +110,8 @@ AIM-chatbot/
 ### 更广泛的素材文件选择
 
 如果你想使用其他格式的教材文件（例如 docx、pptx），请自行处理文件解析的过程，需要重新实现 `src/content_construct.py` 中的 `split_single_file` 函数，这个函数接受一个文件路径，和文本块大小，返回一个文本块列表，即将文件内容分割成一个个文本块。当前的实现是针对 tex 文件的，对 tex 的语法进行额外处理，以保持语义的完整性。
+
+此外，Jina embedding 是一个多模态的 embedding 框架，支持多种数据类型的 embedding，如果你想使用其他格式的数据，可以参考 Jina 的文档，自行实现 embedding 模块。
 
 ### 更复杂的 RAG 交互逻辑
 

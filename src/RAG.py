@@ -16,11 +16,12 @@ from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.chat_engine import CondenseQuestionChatEngine
 from config import (
-    JINAAI_API_KEY,
-    JINAAI_MODEL,
-    DEEPSEEK_API_KEY,
-    DEEPSEEK_MODEL,
+    EMBEDDING_API_KEY,
+    EMBEDDING_MODEL,
+    LLM_API_KEY,
+    LLM_MODEL,
     DB_DIR,
+    LLM_TEMPERATURE,
     SIMILARITY_TOP_K
 )
 import os
@@ -28,12 +29,12 @@ import os
 
 def constructVecDB(bookSplitted: list[str]):
     Settings.embed_model = JinaEmbedding(
-        api_key=JINAAI_API_KEY,
-        model=JINAAI_MODEL,
+        api_key=EMBEDDING_API_KEY,
+        model=EMBEDDING_MODEL,
         # choose `retrieval.passage` to get passage embeddings
         task="retrieval.passage",
     )
-    Settings.llm = DeepSeek(model=DEEPSEEK_MODEL, api_key=DEEPSEEK_API_KEY)
+    Settings.llm = DeepSeek(model=LLM_MODEL, temperature=LLM_TEMPERATURE, api_key=LLM_API_KEY)
 
     if not os.path.exists(DB_DIR):
 
@@ -64,7 +65,8 @@ def constructVecDB(bookSplitted: list[str]):
 用户的消息：{query_str}
 
 要求做到：
-- 包含数学公式时使用 Markdown LaTeX 格式，行间公式单独成行
+- 包含数学公式时使用 Markdown LaTeX 格式，行间公式单独成行。
+- 如果不是一个课程相关的问题，请不要画蛇添足。
 - 如同老师给学生解答的过程，从浅到深，由具体到一般，非常详细，由流畅的文字+展示组成，而不是简单几条大纲。
 - 如果提供的课程资料不足，请明确说明。
 
@@ -81,7 +83,10 @@ def constructVecDB(bookSplitted: list[str]):
 def constructChatEngine(query_engine: BaseQueryEngine):
     # 默认的重写问题的 prompt
     custom_prompt = PromptTemplate(
-        """总结对话历史（User和assistant的对话），写一个概要，然后将这个概要拼接上下面User的最新消息，模版为（方括号不要出现）：“[这里填入对话概要]最新User现在跟你说：[这里填入最新消息]”，尽量短思考。
+        """总结对话历史（User和assistant的对话），写一个概要，然后将这个概要拼接上下面User的最新消息，模版为（方括号不要出现）：
+        
+[这里填入对话概要]最新User现在跟你说：[这里填入最新消息]。
+
 <对话历史> {chat_history}
 <最新消息> {question}
 <拼接后的新消息>

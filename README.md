@@ -74,9 +74,11 @@ AIM-chatbot/
 
 本项目可以用于其他课程的智能问答系统构建，以下是一些很容易定制的地方：
 
-### 模型选择
+### 模型（参数）选择
 
 你可以自由选择 Jina 的 embedding 模型和 deepseek 的大语言模型，只需在 `src/config.py` 中修改相关配置即可，例如，你可以将 LLM 改为 `deepseek-reasoner`，就可以使用 deepseek R1 模型。
+
+此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `LLM_TEMPERATURE` 即可，数值范围为 0 到 2。
 
 ### 自定义 LaTeX 宏
 

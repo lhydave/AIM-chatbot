@@ -15,7 +15,7 @@
 
 - conda 24.5.0（推荐这个版本，其他版本未经过测试）
 - Jina API Key（向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取）
-- deepseek API Key（LLM，从[这个链接](http://platform.deepseek.com)获取）
+- 火山方舟引擎 API Key，LLM ID（LLM，详见[这个链接](https://www.volcengine.com/product/ark)，按照教程获取）
 - Anaconda 或 Miniconda
 
 ## 安装步骤
@@ -39,7 +39,7 @@ pip install -r requirements.txt
 
 4. 配置环境：
 - 在 `src/config.py` 中写入教材文件（如果有多个，只列举出现了 `\documentclass` 的主文件）
-- 在 `src/config.py` 中配置相关 API 密钥
+- 在 `src/config.py` 中配置相关 API 密钥、模型 ID 等信息
 
 ## 运行应用
 
@@ -76,9 +76,11 @@ AIM-chatbot/
 
 ### 模型（参数）选择
 
-你可以自由选择 Jina 的 embedding 模型和 deepseek 的大语言模型，只需在 `src/config.py` 中修改相关配置即可，例如，你可以将 `LLM_MODEL` 改为 `deepseek-reasoner`，就可以使用 deepseek R1 模型。
+你可以自由选择 Jina 的 embedding 模型和火山方舟上部署的的大语言模型，只需在 `src/config.py` 中修改相关配置即可，请参考具体的 API 文档。
 
-此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `LLM_TEMPERATURE` 即可，数值范围为 0 到 2。
+此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `LLM_TEMPERATURE` 即可，数值范围为 0 到 1。
+
+ 我们还提供了一个参数`SIMILARITY_TOP_K`，这个参数代表着检索时返回的最相似的文本块数量，数值越大，返回的文本块越多，但是检索速度会变慢，和LLM的交互速度也会变慢。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `SIMILARITY_TOP_K` 即可。
 
 ### 自定义 LaTeX 宏
 
@@ -102,7 +104,7 @@ AIM-chatbot/
 
 ### 更广泛的模型选择
 
-当前项目使用了 Jina 和 deepseek 的 API，以及 `llama_index` 自带的向量数据库，如果你想使用其他的模型，需要修改 `src/RAG.py` 中的相关代码，以适应新的模型。
+当前项目使用了 Jina 和火山方舟的 API，以及 `llama_index` 自带的向量数据库，如果你想使用其他的模型，需要修改 `src/RAG.py` 中的相关代码，以适应新的模型。
 - 修改 `llama_index.embeddings` 相关的 `import` 语句，以及后续对应的应用语句，以适应新的 embedding 模型
 - 修改 `llama_index.llms` 相关的 `import` 语句，以及后续对应的应用语句，以适应新的大语言模型
 - 修改 `llama_index.core` 导入的 `VectorStoreIndex`、`SimpleDirectoryReader` 和 `StorageContext`，以适应新的向量数据库

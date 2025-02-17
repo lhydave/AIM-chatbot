@@ -56,7 +56,7 @@ st.caption("基于教材的智能问答系统")
 # 显示聊天记录
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        st.markdown(message["content"],unsafe_allow_html=True)
 
 # 用户输入处理
 if prompt := st.chat_input("请输入您的问题..."):

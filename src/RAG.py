@@ -3,7 +3,7 @@ Embedding the textbook into vector database and construct the RAG chatbot.
 """
 
 from llama_index.embeddings.jinaai import JinaEmbedding
-from llama_index.llms.deepseek import DeepSeek
+from llama_index.llms.openai_like import OpenAILike
 from llama_index.core import (
     Settings,
     VectorStoreIndex,
@@ -20,9 +20,10 @@ from config import (
     EMBEDDING_MODEL,
     LLM_API_KEY,
     LLM_MODEL,
+    LLM_API_BASE,
     DB_DIR,
     LLM_TEMPERATURE,
-    SIMILARITY_TOP_K
+    SIMILARITY_TOP_K,
 )
 import os
 
@@ -34,7 +35,12 @@ def constructVecDB(bookSplitted: list[str]):
         # choose `retrieval.passage` to get passage embeddings
         task="retrieval.passage",
     )
-    Settings.llm = DeepSeek(model=LLM_MODEL, temperature=LLM_TEMPERATURE, api_key=LLM_API_KEY)
+    Settings.llm = OpenAILike(
+        model=LLM_MODEL,
+        api_base=LLM_API_BASE,
+        temperature=LLM_TEMPERATURE,
+        api_key=LLM_API_KEY,
+        is_chat_model=True) # type: ignore
 
     if not os.path.exists(DB_DIR):
 
@@ -43,7 +49,9 @@ def constructVecDB(bookSplitted: list[str]):
             os.makedirs(temp_dir)
 
         for i, text in enumerate(bookSplitted):
-            with open(os.path.join(temp_dir, f"doc_{i}.txt"), "w", encoding="utf-8") as f:
+            with open(
+                os.path.join(temp_dir, f"doc_{i}.txt"), "w", encoding="utf-8"
+            ) as f:
                 f.write(text)
         documents = SimpleDirectoryReader(temp_dir).load_data()
         index = VectorStoreIndex.from_documents(documents)
@@ -65,10 +73,10 @@ def constructVecDB(bookSplitted: list[str]):
 用户的消息：{query_str}
 
 要求做到：
+- 课程资料中的表格、定理、证明等 latex 环境无法正确显示，请转换为 Markdown 语法。
+- 课程资料中的 \\Cref和 \\ref 不会正确显示，请把他们换成自然语言。
 - 包含数学公式时使用 Markdown LaTeX 格式，行间公式单独成行。
-- 如果不是一个课程相关的问题，请不要画蛇添足。
 - 如同老师给学生解答的过程，从浅到深，由具体到一般，非常详细，由流畅的文字+展示组成，而不是简单几条大纲。
-- 如果提供的课程资料不足，请明确说明。
 
 你的回复："""
     )

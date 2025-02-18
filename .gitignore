@@ -8,3 +8,4 @@ book_chunks.txt
 .pytest_cache
 storage/
 my_config.toml
+.DS_store

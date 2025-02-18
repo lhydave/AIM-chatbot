@@ -147,10 +147,18 @@ def split_contents(contentPaths: list[str], maxChunkSize: int):
 
 
 if __name__ == "__main__":
-    from config import *
+    import tomllib
+    config_path = './my_config.toml'
+    with open(config_path, 'br') as f:
+        config = tomllib.load(f)
+
+    # Extract configuration values
+    textbook_main_paths = config['textbook_main_paths']
+    max_chunk_size = config['max_chunk_size']
+
 
     # Split the book and write chunks to file
-    chunks = split_contents(TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE)
+    chunks = split_contents(textbook_main_paths, max_chunk_size)
     with open("book_chunks.txt", "w", encoding="utf-8") as f:
         for i, chunk in enumerate(chunks):
             f.write(f"=== Chunk {i} ===\n{chunk}\n\n")

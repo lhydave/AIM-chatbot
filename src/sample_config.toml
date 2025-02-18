@@ -1,0 +1,49 @@
+# 示例配置文件
+# 请复制此文件并重命名为my_config.toml，然后根据实际情况修改配置值
+
+# 教材主要内容的tex文件路径列表
+# 支持多个文件路径，每个路径需要使用绝对路径或者相对src文件的路径
+textbook_main_paths = [
+    "/path/to/your/textbook/main.tex"
+]
+
+# 分割文本的最大块大小（单位：token）
+# 推荐值：512-2048之间
+max_chunk_size = 1024
+
+# ===== embedding模型设置 =====
+
+# Jina AI的API密钥
+# 从 https://jina.ai/ 获取API密钥
+embedding_api_key = "your-jina-api-key-here"
+
+# 使用的文本嵌入模型名称
+embedding_model = "jina-embeddings-v3"
+
+# 文本嵌入的任务类型
+embedding_task = "retrieval.passage"
+
+# 检索时返回的最相似文本数量
+# 推荐值：3-10之间
+similarity_top_k = 5
+
+# ===== 大语言模型设置 =====
+
+# 大语言模型的API密钥
+llm_api_key = "your-llm-api-key-here"
+
+# 使用的大语言模型版本
+llm_model = "your-model-version"
+
+# 大语言模型API的基础URL，示例中的是火山方舟 API
+llm_api_base = "https://ark.cn-beijing.volces.com/api/v3"
+
+# 模型输出的随机性程度
+# 范围：0.0-1.0，值越低输出越确定
+llm_temperature = 0.4
+
+# ===== 数据库设置 =====
+
+# 向量数据库存储的目录路径
+# 使用相对路径或绝对路径
+db_dir = "../storage"

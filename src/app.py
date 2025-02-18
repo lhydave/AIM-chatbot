@@ -4,10 +4,21 @@ Create the Web UI for the chatbot.
 
 import streamlit as st
 from content_construct import split_contents
-from config import TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE  # 从config导入预设配置
 from RAG import constructVecDB, constructChatEngine
 from util import processResponse
 import os
+import tomllib
+
+# choose your configuration file here
+config_path = './my_config.toml'
+
+# Load configuration
+with open(config_path, 'br') as f:
+    config = tomllib.load(f)
+
+# Extract configuration values
+textbook_main_paths = config['textbook_main_paths']
+max_chunk_size = config['max_chunk_size']
 
 
 # 设置页面
@@ -23,10 +34,10 @@ st.set_page_config(
 def init_system():
     try:
         # 分割教材
-        bookSplitted = split_contents(TEXTBOOK_MAIN_PATHS, MAX_CHUNK_SIZE)
+        bookSplitted = split_contents(textbook_main_paths, max_chunk_size)
 
         # 构建向量数据库
-        query_engine = constructVecDB(bookSplitted)
+        query_engine = constructVecDB(bookSplitted,config)
 
         # 创建聊天引擎
         st.session_state.chat_engine = constructChatEngine(query_engine)

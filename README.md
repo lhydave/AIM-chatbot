@@ -16,7 +16,6 @@
 - conda 24.5.0（推荐这个版本，其他版本未经过测试）
 - Jina API Key（向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取）
 - 火山方舟引擎 API Key，LLM ID（LLM，详见[这个链接](https://www.volcengine.com/product/ark)，按照教程获取）
-- Anaconda 或 Miniconda
 
 ## 安装步骤
 
@@ -38,8 +37,8 @@ pip install -r requirements.txt
 ```
 
 4. 配置环境：
-- 在 `src/config.py` 中写入教材文件（如果有多个，只列举出现了 `\documentclass` 的主文件）
-- 在 `src/config.py` 中配置相关 API 密钥、模型 ID 等信息
+- 复制一份 `src/sample_config.toml` 到 `src/my_config.toml`
+- 按照提示填写 `src/my_config.toml` 中的各种配置项，包括 tex 文件路径、Jina API Key、火山方舟引擎 API Key 和 LLM ID
 
 ## 运行应用
 
@@ -55,13 +54,24 @@ streamlit run app.py
 
 ```
 AIM-chatbot/
-├── src/
-│   ├── app.py            # Web 主应用程序
-│   ├── config.py         # 配置文件
-│   ├── content_construct.py  # tex 内容处理
-│   ├── RAG.py           # RAG 系统实现
-│   └── util.py          # 工具函数
-└── requirements.txt    # 依赖包列表
+├── LICENSE                 # MIT许可证
+├── README.md              # 项目说明文档
+├── requirements.txt       # Python依赖包列表
+├── pytest.ini            # pytest配置文件
+├── src/                  # 源代码目录
+│   ├── __init__.py      
+│   ├── app.py           # Web应用主程序（Streamlit）
+│   ├── RAG.py           # RAG系统实现
+│   ├── content_construct.py  # 文本处理和分割
+│   ├── latex_defs.py    # LaTeX宏定义
+│   ├── prompts.py       # 提示词配置
+│   ├── util.py          # 工具函数
+│   ├── my_config.toml   # 个人配置文件（需自行创建）
+│   └── sample_config.toml  # 配置文件模板
+├── tests/               # 测试目录
+│   ├── test_content_construct.py  # 文本处理测试
+│   └── test_utils.py    # 工具函数测试
+└── storage/            # 向量数据库存储目录（自动创建）
 ```
 
 ## 注意事项
@@ -76,25 +86,28 @@ AIM-chatbot/
 
 ### 模型（参数）选择
 
-你可以自由选择 Jina 的 embedding 模型和火山方舟上部署的的大语言模型，只需在 `src/config.py` 中修改相关配置即可，请参考具体的 API 文档。
+你可以自由选择 Jina 的 embedding 模型和火山方舟上部署的的大语言模型，只需在 `src/my_config.toml` 中修改相关配置即可，请参考具体的 API 文档。
 
-此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `LLM_TEMPERATURE` 即可，数值范围为 0 到 1。
+此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/my_config.toml` 中修改 `llm_temperature` 即可，数值范围为 0 到 1。
 
- 我们还提供了一个参数`SIMILARITY_TOP_K`，这个参数代表着检索时返回的最相似的文本块数量，数值越大，返回的文本块越多，但是检索速度会变慢，和LLM的交互速度也会变慢。你可以根据实际情况调整这一参数。只需要在 `src/config.py` 中修改 `SIMILARITY_TOP_K` 即可。
+ 我们还提供了一个参数`SIMILARITY_TOP_K`，这个参数代表着检索时返回的最相似的文本块数量，数值越大，返回的文本块越多，但是检索速度会变慢，和LLM的交互速度也会变慢。你可以根据实际情况调整这一参数。只需要在 `src/my_config.toml` 中修改 `similarity_top_k` 即可。
 
 ### 自定义 LaTeX 宏
 
-你可以自由定制 LaTeX 的宏定义（即类似 `\newcommand` 或 `\DeclareMathOperator` 的命令），这样对话系统可以正确显示这些 latex 数学公式。要做到这一点，只需在 `src/util.py` 中修改 `LATEX_MACROS` 或 `LATEX_COMMANDS` 即可，格式请参考当前的定义。
+你可以自由定制 LaTeX 的宏定义（即类似 `\newcommand` 或 `\DeclareMathOperator` 的命令），这样对话系统可以正确显示这些 latex 数学公式。要做到这一点，只需在 `src/latex_defs.py` 中修改 `LATEX_MACROS` 或 `LATEX_COMMANDS` 即可，格式请参考当前的定义。
 
 ### 选择 tex 素材文件
 
-只需在 `src/config.py` 中修改 `TEX_FILES` 即可。当前支持多个主文件（即有 `\documentclass` 的文件），其他所有 tex 文件需要通过 `\input` 或 `\include` 命令（递归地）引入。只需声明主文件即可，系统会自动导入所有相关文件。
+只需在 `src/my_config.toml` 中修改 `textbook_main_paths` 即可。当前支持多个主文件（即有 `\documentclass` 的文件），其他所有 tex 文件需要通过 `\input` 或 `\include` 命令（递归地）引入。只需声明主文件即可，系统会自动导入所有相关文件。
 
 ### 定制提示词
 
-你可以自由修改 RAG 的相关提示词，只需在 `src/RAG.py` 中修改对应的提示词即可。这些提示词会影响 RAG 的生成结果，请谨慎修改。提示词的运行方式如下：
-- 当用户输入一个问题的时候，系统会使用 `constructChatEngine` 中的 `custom_prompt` 作为提示词输入 LLM，这一提示词的功能是总结历史对话，然后拼接上当前问题，作为向量数据库的输入。
-- 接下来，向量数据库会利用这个输入，检索相关的教材内容，然后利用 `constructVecDB` 中的 `qa_prompt` 作为提示词模板，将检索的内容、用户的消息拼接，输出给 LLM，生成回答。
+你可以自由修改 RAG 的相关提示词，只需在 `src/prompts.py` 中修改对应的提示词即可。这些提示词会影响 RAG 的生成结果，请谨慎修改。提示词的运行方式如下：
+- 当用户输入一个问题的时候，系统会使用 `REWRITE_PROMPT` 作为提示词输入 LLM，这一提示词的功能是总结历史对话，然后拼接上当前问题，作为向量数据库的输入。
+- 接下来，向量数据库会利用这个输入，检索相关的教材内容，然后利用 `QA_PROMPT` 作为提示词模板，将检索的内容、用户的消息拼接，输出给 LLM，生成回答。
+- 在系统初始化时，我们还设置了 `FIRST_ROUND_MSG_USER` 和 `FIRST_ROUND_MSG_ASSISTANT` 作为预设的第一轮对话，这样可以让 LLM 更好地理解它的角色。
+
+你可以根据自己的需求修改这些提示词，但要注意保持提示词的基本结构，比如确保 `QA_PROMPT` 中包含 `{context_str}` 和 `{query_str}` 这些占位符，确保 `REWRITE_PROMPT` 中包含 `{chat_history}` 和 `{question}` 这些占位符。
 
 ### 定制 Web 界面文字
 

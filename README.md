@@ -90,7 +90,7 @@ AIM-chatbot/
 
 此外，你还可以设置 temperature，这一参数代表着 LLM 生成文本的随机性，数值越大，生成的文本越随机，数值越小，生成的文本越确定。你可以根据实际情况调整这一参数。只需要在 `src/my_config.toml` 中修改 `llm_temperature` 即可，数值范围为 0 到 1。
 
- 我们还提供了一个参数`SIMILARITY_TOP_K`，这个参数代表着检索时返回的最相似的文本块数量，数值越大，返回的文本块越多，但是检索速度会变慢，和LLM的交互速度也会变慢。你可以根据实际情况调整这一参数。只需要在 `src/my_config.toml` 中修改 `similarity_top_k` 即可。
+ 我们还提供了一个参数`similarity_top_k`，这个参数代表着检索时返回的最相似的文本块数量，数值越大，返回的文本块越多，但是检索速度会变慢，和LLM的交互速度也会变慢。你可以根据实际情况调整这一参数。只需要在 `src/my_config.toml` 中修改 `similarity_top_k` 即可。
 
 ### 自定义 LaTeX 宏
 

@@ -1,0 +1,47 @@
+name: Test Conda and Python Scripts
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'  # 你可以根据需要更改 Python 版本
+
+    - name: Install Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: '3.11'  # 你可以根据需要更改 Python 版本
+        activate-environment: AIM-chatbot  # 你可以根据需要更改环境名称
+
+    - name: Install dependencies from requirements.txt
+      run: |
+        conda activate AIM-chatbot
+        pip install -r requirements.txt
+
+    - name: Change directory to src
+      run: cd src
+
+    - name: Run app.py
+      run: |
+        conda activate AIM-chatbot
+        python app.py
+
+    - name: Run RAG.py
+      run: |
+        conda activate AIM-chatbot
+        python RAG.py

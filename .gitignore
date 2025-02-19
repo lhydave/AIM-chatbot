@@ -9,3 +9,4 @@ book_chunks.txt
 storage/
 my_config.toml
 .DS_store
+requirement.txt

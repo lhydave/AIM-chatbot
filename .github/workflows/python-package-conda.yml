@@ -10,43 +10,52 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
+    name: Test (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        python-version: ["3.11"]
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'  # 你可以根据需要更改 Python 版本
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        auto-update-conda: true
-        python-version: '3.11'  # 你可以根据需要更改 Python 版本
-        activate-environment: AIM-chatbot  # 你可以根据需要更改环境名称
+      - name: Install Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          activate-environment: AIM-chatbot
 
-    - name: Initialize Conda for shell
-      run: |
-        conda init bash
-        source ~/.bashrc
+      - name: Initialize Conda for shell
+        shell: bash -el {0}
+        run: |
+          conda init bash
+          source ~/.bashrc
 
-    - name: Install dependencies from requirements.txt
-      run: |
-        conda activate AIM-chatbot
-        pip install -r requirements.txt
+      - name: Install dependencies from requirements.txt
+        shell: bash -el {0}
+        run: |
+          conda activate AIM-chatbot
+          pip install -r requirements.txt
 
-    - name: Change directory to src
-      run: cd src
+      - name: Change directory to src
+        run: cd src
 
-    - name: Run RAG.py
-      run: |
-        conda activate AIM-chatbot
-        python RAG.py
+      - name: Run app.py
+        shell: bash -el {0}
+        run: |
+          conda activate AIM-chatbot
+          python app.py
 
-    - name: Run app.py
-      run: |
-        conda activate AIM-chatbot
-        python app.py
+      - name: Run RAG.py
+        shell: bash -el {0}
+        run: |
+          conda activate AIM-chatbot
+          python RAG.py

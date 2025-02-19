@@ -1,10 +1,11 @@
 # 示例配置文件
 # 请复制此文件并重命名为my_config.toml，然后根据实际情况修改配置值
 
-# 教材主要内容的tex文件路径列表
+# 教材主要内容的main.tex文件路径列表，注意，是main文件而不是所有tex文件
 # 支持多个文件路径，每个路径需要使用绝对路径或者相对src文件的路径
 textbook_main_paths = [
-    "/path/to/your/textbook/main.tex"
+    "/path/to/your/textbook/main1.tex",
+    "/path/to/your/textbook/main2.tex"
 ]
 
 # 分割文本的最大块大小（单位：token）

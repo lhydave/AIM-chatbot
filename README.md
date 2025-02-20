@@ -13,6 +13,7 @@
 
 ## 系统要求
 
+- git
 - conda 24.5.0（推荐这个版本，其他版本未经过测试）
 - Jina API Key（向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取）
 - 火山方舟引擎 API Key，LLM ID（LLM，详见[这个链接](https://www.volcengine.com/product/ark)，按照教程获取）

@@ -33,7 +33,7 @@ conda activate aim-chatbot
 
 3. 安装依赖包：
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt --user
 ```
 
 4. 配置环境：

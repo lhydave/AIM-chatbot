@@ -14,11 +14,26 @@
 ## 系统要求
 
 - git
-- conda 24.5.0（推荐这个版本，其他版本未经过测试）
-- Jina API Key（向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取）
-- 火山方舟引擎 API Key，LLM ID（LLM，详见[这个链接](https://www.volcengine.com/product/ark)，按照教程获取）
+    - Mac 和 Linux 系统自带
+    - Windows 系统需要安装，可以参考[这个链接](https://cloud.tencent.com/developer/article/2099150)
+- conda
+    - 安装请参考[这个链接](https://docs.anaconda.com/miniconda/install/)
+- Jina API 密钥
+    - 向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取
+- 火山方舟引擎 API Key，LLM ID
+    - LLM，详见[这个链接](https://www.volcengine.com/docs/82379/1399008)，按照教程获取
+- 终端命令行工具
+    - 用于运行系统，可以在终端中输入命令
+    - Mac 和 Linux 为终端（英文为 Terminal）
+    - Windows 为 PowerShell 或者 cmd
+
+## 教材准备
+
+本系统需要使用《AI 中的数学》教材的 tex 文件作为输入，你可以从[这个链接](https://github.com/lhydave/AIM-textbook)获取教材的 tex 文件。请注意，你需要将*完整的文件夹*下载到本地，而不是只下载 main.tex 文件。
 
 ## 安装步骤
+
+以下步骤都在终端中进行，如果遇到问题，请参考[遇到问题时候的检查方法](#遇到问题时候的检查方法)。
 
 1. 克隆项目仓库：
 ```bash
@@ -26,9 +41,9 @@ git clone https://github.com/lhydave/AIM-chatbot.git
 cd AIM-chatbot
 ```
 
-2. 创建并激活 Conda 环境：
+2. 创建并激活 conda 环境：
 ```bash
-conda create -n aim-chatbot python=3.11
+conda create -n aim-chatbot python=3.11 --no-default-packages
 conda activate aim-chatbot
 ```
 
@@ -43,15 +58,51 @@ pip install -r requirements.txt --user
 
 ## 运行应用
 
-1. 启动应用：
+以下步骤都在终端中进行，如果遇到问题，请参考[遇到问题时候的检查方法](#遇到问题时候的检查方法)。
+
+1. 每次使用的时候请先激活 conda 环境：
+```bash
+conda activate aim-chatbot
+```
+
+2. 启动应用：
 ```bash
 cd src
 streamlit run app.py
 ```
 
-2. 在浏览器中打开 `http://localhost:8501`，即可开始使用
+2. 在浏览器中打开 `http://localhost:8501`，即可开始使用（注意，这一步通常并不需要做，因为 streamlit 会自动打开浏览器）
 
-*首次运行时需要构建向量数据库，存储在 `storage` 文件夹中，可能需要较长时间，请耐心等待*
+> 首次运行时需要构建向量数据库，存储在 `storage` 文件夹中，可能需要较长时间，请耐心等待
+
+## 遇到问题时候的检查方法
+
+在运行软件的时候，可能会遇到一些问题，有一些问题可以在网页界面中直接看到，你可以通过搜索的方式试图解决。
+
+如果问题出在构建向量数据库及之前的环节，那么网页不会正确加载，streamlit 应用会直接退出，此时，请遵循以下步骤：
+
+1. 确保你已经按照前面的所有步骤操作
+2. 确保你已经激活了 `aim-chatbot` 的 conda 环境
+3. 确保你已经正确填写了 `src/my_config.toml` 中的配置项
+3. 如果以上都没有问题，请使用命令行对话模式：
+
+```bash
+cd src
+python RAG.py
+```
+
+此时，你可以在命令行中进行交互，任何错误都会在终端中显示，方便你进行调试。
+
+### 常见错误汇总
+
+- pip 安装依赖库不兼容：请确保你的 python 版本是 3.11，且 conda 创建环境的时候使用了 `--no-default-packages` 参数
+- 找不到某个 tex 文件：请确保你已经完整下载了教材的 tex 文件夹（而不是只有 `main.tex` 文件），并且正确填写了 `src/my_config.toml` 中的 `textbook_main_paths` 配置项
+- LLM ID 配置错误：请注意，如果使用接入点配置，LLM ID 是一个开头为`ep-`的字符串，如果不是这个格式，可能是配置错误
+- 在终端中输入指令之后报错 `xxx is not a file or directory` 或者 `command not found: xxx`：请检查你的 xxx 安装过程中是否已经进行过环境变量配置。不同的 xxx 安装方法可能有不同的配置方法，一般性的配置方法请参考下面的链接：
+    - [Windows 系统](https://blog.csdn.net/wangpaiblog/article/details/113532591)
+    - [Mac 系统](https://pgzxc.github.io/posts/b577abb2.html)
+    - [Linux 系统](https://zhuanlan.zhihu.com/p/557885534)
+
 
 ## 项目结构
 

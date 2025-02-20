@@ -97,7 +97,7 @@ python RAG.py
 
 - pip 安装依赖库不兼容：请确保你的 python 版本是 3.11，且 conda 创建环境的时候使用了 `--no-default-packages` 参数
 - 找不到某个 tex 文件：请确保你已经完整下载了教材的 tex 文件夹（而不是只有 `main.tex` 文件），并且正确填写了 `src/my_config.toml` 中的 `textbook_main_paths` 配置项
-- LLM ID 配置错误：请注意，如果使用接入点配置，LLM ID 是一个开头为`ep-`的字符串，如果不是这个格式，可能是配置错误
+- `InvalidEndpointOrModel` 错误：请注意，如果使用接入点配置，LLM ID 是一个开头为`ep-`的字符串，如果不是这个格式，可能是配置错误
 - 在终端中输入指令之后报错 `xxx is not a file or directory` 或者 `command not found: xxx`：请检查你的 xxx 安装过程中是否已经进行过环境变量配置。不同的 xxx 安装方法可能有不同的配置方法，一般性的配置方法请参考下面的链接：
     - [Windows 系统](https://blog.csdn.net/wangpaiblog/article/details/113532591)
     - [Mac 系统](https://pgzxc.github.io/posts/b577abb2.html)

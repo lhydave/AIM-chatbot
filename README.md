@@ -18,6 +18,7 @@
     - Windows 系统需要安装，可以参考[这个链接](https://cloud.tencent.com/developer/article/2099150)
 - conda
     - 安装请参考[这个链接](https://docs.anaconda.com/miniconda/install/)
+    - 请注意，安装完 conda 还需要设置环境变量
 - Jina API 密钥
     - 向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取
 - 火山方舟引擎 API Key，LLM ID
@@ -88,7 +89,7 @@ streamlit run app.py
 
 ```bash
 cd src
-python RAG.py
+python3 RAG.py
 ```
 
 此时，你可以在命令行中进行交互，任何错误都会在终端中显示，方便你进行调试。
@@ -96,13 +97,15 @@ python RAG.py
 ### 常见错误汇总
 
 - pip 安装依赖库不兼容：请确保你的 python 版本是 3.11，且 conda 创建环境的时候使用了 `--no-default-packages` 参数
+- `ModuleNotFoundError` 错误：请确保你已经激活了 `aim-chatbot` 的 conda 环境，并确认 conda 的环境变量配置正确，如果你是 Mac 或者 Linux 系统，请确保 conda python 覆盖了系统 python
 - 找不到某个 tex 文件：请确保你已经完整下载了教材的 tex 文件夹（而不是只有 `main.tex` 文件），并且正确填写了 `src/my_config.toml` 中的 `textbook_main_paths` 配置项
 - `InvalidEndpointOrModel` 错误：请注意，如果使用接入点配置，LLM ID 是一个开头为`ep-`的字符串，如果不是这个格式，可能是配置错误
 - 在终端中输入指令之后报错 `xxx is not a file or directory` 或者 `command not found: xxx`：请检查你的 xxx 安装过程中是否已经进行过环境变量配置。不同的 xxx 安装方法可能有不同的配置方法，一般性的配置方法请参考下面的链接：
     - [Windows 系统](https://blog.csdn.net/wangpaiblog/article/details/113532591)
     - [Mac 系统](https://pgzxc.github.io/posts/b577abb2.html)
     - [Linux 系统](https://zhuanlan.zhihu.com/p/557885534)
-
+- `xxx.tex is not a file or directory` 错误：请确保你把整个 tex 文件夹下载到本地，而不是只下载了 `main.tex` 文件
+- `tomllib` 相关的报错：请确保你已经正确填写了 `src/my_config.toml` 中的配置项，尤其是检查引号和括号是否匹配
 
 ## 项目结构
 

@@ -1,5 +1,5 @@
-from content_construct import *
 import os
+from content_construct import multiTex2Single, splitTexBy, stripDocument, splitTexByEnv, splitTexByPar
 
 def test_multiTex2Single():
     # Create test directory and files

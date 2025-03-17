@@ -1,5 +1,6 @@
 from util import replaceMacros
 
+
 def test_replaceMacros_simple():
     content = r"The set \Z is a subset of \R"
     result = replaceMacros(content)

@@ -1,0 +1,68 @@
+{
+  "answers": [
+    {
+      "problem_id": "chap1.prob2(1)(2)",
+      "answer": {
+        "answer": "",
+        "sub_answers": [
+          {
+            "sub_id": "1",
+            "sub_answer": "子问题1的回答"
+          },
+          {
+            "sub_id": "2",
+            "sub_answer": "子问题2的回答"
+          }
+        ]
+      }
+    },
+    {
+      "problem_id": "chap1.prob5",
+      "answer": {
+        "answer": "- 情形1：情形1的讨论\n- 情形2：情形2的讨论\n  - 情形2.1：情形2.1的讨论\n  - 情形2.2：情形2.2的讨论\n    - 情形2.2.1：情形2.2.1的讨论"
+      }
+    },
+    {
+      "problem_id": "chap1.prob6",
+      "answer": {
+        "answer": "![图片说明](example-image-b.jpg)\n\n*图1: 图片说明*\n\n如上图1所示...\n\n只支持jpg, jpeg, png, gif, svg格式的图片，不支持pdf"
+      }
+    },
+    {
+      "problem_id": "chap1.prob7",
+      "answer": {
+        "answer": "| 列1 | 列2 |\n|-----|-----|\n| 1   | 2   |\n| 3   | 4   |\n\n*表1: 表格说明*\n\n如上表1所示..."
+      }
+    },
+    {
+      "problem_id": "chap1.prob8",
+      "answer": {
+        "answer": "这是第一段\n\n这是第二段"
+      }
+    },
+    {
+      "problem_id": "chap1.prob10",
+      "answer": {
+        "answer": "行内公式: $\\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) dx = \\sqrt{2\\pi}$\n\n行间公式:\n\n$$\n\\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) dx = \\sqrt{2\\pi}\n$$\n\n多行公式:\n\n$$\n\\begin{aligned}\n\\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) dx\n&= \\sqrt{2\\pi} \\\\\n&= \\sqrt{2\\pi}\n\\end{aligned}\n$$\n\n编号公式 (1):\n\n$$\n\\begin{aligned}\n\\frac{1}{2} \\left( \\frac{1}{\\sqrt{2\\pi}} \\right)^2 \\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) dx\n&= \\frac{1}{2} \\left( \\frac{1}{\\sqrt{2\\pi}} \\right)^2 \\sqrt{2\\pi} \\\\\n&= \\frac{1}{4\\pi}\n\\end{aligned}\n\\tag{1}\n$$\n\n如公式(1)所示..."
+      }
+    },
+    {
+      "problem_id": "chap1.prob11",
+      "answer": {
+        "answer": "- 对$t=1,2,\\ldots$循环执行以下步骤：\n  - 从分布$P_t$中采样得到样本$x_t$\n  - 计算梯度$g_t=\\nabla f(x_t)$\n  - 更新参数$x_{t+1}=x_t-\\eta_t g_t$"
+      }
+    },
+    {
+      "problem_id": "chap2.prob1",
+      "answer": {
+        "answer": ""
+      }
+    },
+    {
+      "problem_id": "chap2.prob常用数学符号参考",
+      "answer": {
+        "answer": "- 集合: $\\mathbb{Z}, \\mathbb{N}, \\mathbb{R}, \\mathbb{Q}, \\mathbb{C}$\n- 期望: $\\mathbb{E}$\n- 算子: $\\mathrm{Span}, \\mathrm{Im}, \\mathrm{rank}$\n- 范数: $\\|x\\|$\n- 内积: $\\langle x,y \\rangle$\n- 分布: $\\mathcal{N}, \\mathrm{Poisson}, \\mathcal{U}$\n- 其他: $\\mathrm{const}, \\mathrm{KL}, \\mathrm{ReLU}$"
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "answers": [
+    {
+      "problem_id": "chap1.prob2(1)(2)",
+      "answer": {
+        "answer": "子问题模板：",
+        "sub_answers": [
+          {
+            "sub_id": "1",
+            "sub_answer": "子问题1的回答"
+          },
+          {
+            "sub_id": "2",
+            "sub_answer": "子问题2的回答"
+          }
+        ]
+      }
+    },
+    {
+      "problem_id": "chap1.prob5",
+      "answer": {
+        "answer": "分类讨论模版：\n\\begin{itemize}\n    \\item 情形1：情形1的讨论\n    \\item 情形2：情形2的讨论\n    \\begin{itemize}\n        \\item 情形2.1：情形2.1的讨论\n        \\item 情形2.2：情形2.2的讨论\n        \\begin{itemize}\n            \\item 情形2.2.1：情形2.2.1的讨论\n        \\end{itemize}\n    \\end{itemize}\n\\end{itemize}"
+      }
+    },
+    {
+      "problem_id": "chap1.prob6",
+      "answer": {
+        "answer": "图片模版\n\\begin{figure}[ht]\n    \\centering\n    \\includegraphics[width=0.7\\textwidth]{example-image-a.pdf}\n    \\caption{图片说明}\\label{fig:example}\n\\end{figure}\n引用图片：图 \\ref{fig:example}. \n\n支持多种格式，如PDF、PNG、JPG、EPS、SVG等，推荐使用PDF格式"
+      }
+    },
+    {
+      "problem_id": "chap1.prob7",
+      "answer": {
+        "answer": "表格模版\n% 定制表格比较复杂，可以询问 LLM 或者使用在线工具生成\n\\begin{table}[H]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        1 & 2 \\\\\n        \\hline\n        3 & 4 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{表格说明}\\label{tab:example}\n\\end{table}\n引用表格：表 \\ref{tab:example}."
+      }
+    },
+    {
+      "problem_id": "chap1.prob8",
+      "answer": {
+        "answer": "换行示例\n\n这是第一段\n\n这是第二段"
+      }
+    },
+    {
+      "problem_id": "chap1.prob10",
+      "answer": {
+        "answer": "公式示例\n\n不带编号的公式：\n\n行内公式：$\\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) \\d x = \\sqrt{2\\pi}$\n\n行间公式：\n\\[\n    \\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) \\d x = \\sqrt{2\\pi}\n\\]\n\n不带编号的多行公式：\n\\begin{align*}\n    \\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) \\d x\n    &= \\sqrt{2\\pi} \\\\\n    &= \\sqrt{2\\pi}\n\\end{align*}\n\n带编号的公式：\n\\begin{equation}\n    \\begin{aligned}\n        \\frac{1}{2} \\left( \\frac{1}{\\sqrt{2\\pi}} \\right)^2 \\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) \\d x\n        &= \\frac{1}{2} \\left( \\frac{1}{\\sqrt{2\\pi}} \\right)^2 \\sqrt{2\\pi} \\\\\n        &= \\frac{1}{4\\pi}\n    \\end{aligned}\\label{eq:example-1}\n\\end{equation}\n引用公式：式 \\eqref{eq:example-1}. \n\n多行带编号的公式\n\\begin{align}\n    \\frac{1}{2} \\left( \\frac{1}{\\sqrt{2\\pi}} \\right)^2 \\int_{-\\infty}^{+\\infty} \\exp\\left( -\\frac{x^2}{2} \\right) \\d x\n    &= \\frac{1}{2} \\left( \\frac{1}{\\sqrt{2\\pi}} \\right)^2 \\sqrt{2\\pi} \\label{eq:example-2} \\\\\n        &= \\frac{1}{4\\pi} \\label{eq:example-3}\n\\end{align}\n引用公式：式 \\eqref{eq:example-2} 和 \\eqref{eq:example-3}."
+      }
+    },
+    {
+      "problem_id": "chap1.prob11",
+      "answer": {
+        "answer": "算法请使用itemize环境，不要使用algorithm2e等包，示例：\n\n\\begin{itemize}\n    \\item 对$t=1,2,\\ldots$循环执行以下步骤：\n    \\begin{itemize}\n        \\item 从分布$P_t$中采样得到样本$x_t$；\n        \\item 计算梯度$g_t=\\nabla f(x_t)$；\n        \\item 更新参数$x_{t+1}=x_t-\\eta_t g_t$. \n    \\end{itemize}\n\\end{itemize}"
+      }
+    },
+    {
+      "problem_id": "chap1.prob12",
+      "answer": {
+        "answer": "流程图请使用tikz包，这个学习曲线比较陡峭，可以询问 LLM 或者查阅文档."
+      }
+    },
+    {
+      "problem_id": "chap2.prob1",
+      "answer": {
+        "answer": "其他问题……"
+      }
+    }
+  ]
+}

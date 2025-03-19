@@ -408,8 +408,40 @@ class OpenReviewInteract:
             submission: The OpenReview submission Note
             review_content: The content of the review
         """
-        # TODO
-        pass
+        submission_number = submission.number
+        logger.info(f"Posting review for submission {submission_number} (Student: {student_submission.student_id})")
+
+        try:
+            # Use the user's own profile ID directly instead of looking for anonymous groups
+            if not self.client.profile:
+                logger.error("User profile not found, cannot post review")
+                raise ValueError("User profile not found, cannot post review")
+
+            signature = self.client.profile.id
+            logger.info(f"Using direct user profile as signature: {signature}")
+
+            # Create the review note
+            review_note = openreview.api.Note(
+                content={
+                    "title": {"value": f"Marks for {student_submission.student_id}"},
+                    "review": {"value": review_content},
+                }
+            )
+
+            # Post the review using direct signature
+            review_edit = self.client.post_note_edit(
+                invitation=f"{self.config.venue_id}/Submission{submission_number}/-/Official_Review",
+                signatures=[signature],
+                note=review_note,
+            )
+
+            logger.debug(f"Review edit response: {review_edit}")
+
+            logger.info(f"Successfully posted review for submission {submission_number}")
+
+        except Exception as e:
+            logger.error(f"Error posting review for submission {submission_number}: {str(e)}")
+            raise
 
     async def async_post_reviews(
         self,

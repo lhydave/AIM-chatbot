@@ -114,9 +114,9 @@ python3 RAG.py
 
 主要功能是基于教材内容的智能问答，使用了检索增强生成（RAG）技术，将教材内容转换为向量数据库，然后通过大语言模型实现智能问答。
 
-### [自动批作业系统](./auto_marker/README.md)
+### [自动批作业系统](src/auto_marker/README.md)
 
-自动评分系统组件是一个独立组件，它可以全流程自动化学生作业的批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。详细的使用说明和配置选项请参阅[自动评分系统文档](./auto_marker/README.md)。
+自动评分系统组件是一个独立组件，它可以全流程自动化学生作业的批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。详细的使用说明和配置选项请参阅[自动评分系统文档](src/auto_marker/README.md)。
 
 ## 注意事项
 

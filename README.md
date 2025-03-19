@@ -54,7 +54,7 @@ pip install -r requirements.txt --user
 ```
 
 4. 配置环境：
-- 复制一份 `src/sample_config.toml` 到 `src/my_config.toml`
+- 复制一份 [`src/sample_config.toml`](src/sample_config.toml) 到 `src/my_config.toml`
 - 按照提示填写 `src/my_config.toml` 中的各种配置项，包括 tex 文件路径、Jina API Key、火山方舟引擎 API Key 和 LLM ID
 
 ## 运行应用
@@ -114,7 +114,7 @@ python3 RAG.py
 
 主要功能是基于教材内容的智能问答，使用了检索增强生成（RAG）技术，将教材内容转换为向量数据库，然后通过大语言模型实现智能问答。
 
-### [自动批作业系统](src/auto_marker/README.md)
+### 自动批改系统
 
 自动评分系统组件是一个独立组件，它可以全流程自动化学生作业的批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。详细的使用说明和配置选项请参阅[自动评分系统文档](src/auto_marker/README.md)。
 
@@ -138,7 +138,7 @@ python3 RAG.py
 
 ### 自定义 LaTeX 宏
 
-你可以自由定制 LaTeX 的宏定义（即类似 `\newcommand` 或 `\DeclareMathOperator` 的命令），这样对话系统可以正确显示这些 latex 数学公式。要做到这一点，只需在 `src/latex_defs.py` 中修改 `LATEX_MACROS` 或 `LATEX_COMMANDS` 即可，格式请参考当前的定义。
+你可以自由定制 LaTeX 的宏定义（即类似 `\newcommand` 或 `\DeclareMathOperator` 的命令），这样对话系统可以正确显示这些 latex 数学公式。要做到这一点，只需在 [`src/latex_defs.py`](src/latex_defs.py) 中修改 `LATEX_MACROS` 或 `LATEX_COMMANDS` 即可，格式请参考当前的定义。
 
 ### 选择 tex 素材文件
 
@@ -146,7 +146,7 @@ python3 RAG.py
 
 ### 定制提示词
 
-你可以自由修改 RAG 的相关提示词，只需在 `src/prompts.py` 中修改对应的提示词即可。这些提示词会影响 RAG 的生成结果，请谨慎修改。提示词的运行方式如下：
+你可以自由修改 RAG 的相关提示词，只需在 [`src/prompts.py`](src/prompts.py) 中修改对应的提示词即可。这些提示词会影响 RAG 的生成结果，请谨慎修改。提示词的运行方式如下：
 - 当用户输入一个问题的时候，系统会使用 `REWRITE_PROMPT` 作为提示词输入 LLM，这一提示词的功能是总结历史对话，然后拼接上当前问题，作为向量数据库的输入。
 - 接下来，向量数据库会利用这个输入，检索相关的教材内容，然后利用 `QA_PROMPT` 作为提示词模板，将检索的内容、用户的消息拼接，输出给 LLM，生成回答。
 - 在系统初始化时，我们还设置了 `FIRST_ROUND_MSG_USER` 和 `FIRST_ROUND_MSG_ASSISTANT` 作为预设的第一轮对话，这样可以让 LLM 更好地理解它的角色。
@@ -155,26 +155,26 @@ python3 RAG.py
 
 ### 定制 Web 界面文字
 
-你可以自由修改 Web 界面的各种文字，只需要修改 `src/app.py` 中的相关字符串即可。
+你可以自由修改 Web 界面的各种文字，只需要修改 [`src/app.py`](src/app.py) 中的相关字符串即可。
 
 如果你还需要更高级的定制化，下面是一些指导：
 
 ### 更广泛的模型选择
 
-当前项目使用了 Jina 和火山方舟的 API，以及 `llama_index` 自带的向量数据库，如果你想使用其他的模型，需要修改 `src/RAG.py` 中的相关代码，以适应新的模型。
+当前项目使用了 Jina 和火山方舟的 API，以及 `llama_index` 自带的向量数据库，如果你想使用其他的模型，需要修改 [`src/RAG.py`](src/RAG.py) 中的相关代码，以适应新的模型。
 - 修改 `llama_index.embeddings` 相关的 `import` 语句，以及后续对应的应用语句，以适应新的 embedding 模型
 - 修改 `llama_index.llms` 相关的 `import` 语句，以及后续对应的应用语句，以适应新的大语言模型
 - 修改 `llama_index.core` 导入的 `VectorStoreIndex`、`SimpleDirectoryReader` 和 `StorageContext`，以适应新的向量数据库
 
 ### 更广泛的素材文件选择
 
-如果你想使用其他格式的教材文件（例如 docx、pptx），请自行处理文件解析的过程，需要重新实现 `src/content_construct.py` 中的 `split_single_file` 函数，这个函数接受一个文件路径，和文本块大小，返回一个文本块列表，即将文件内容分割成一个个文本块。当前的实现是针对 tex 文件的，对 tex 的语法进行额外处理，以保持语义的完整性。
+如果你想使用其他格式的教材文件（例如 docx、pptx），请自行处理文件解析的过程，需要重新实现 [`src/content_construct.py`](src/content_construct.py) 中的 `split_single_file` 函数，这个函数接受一个文件路径，和文本块大小，返回一个文本块列表，即将文件内容分割成一个个文本块。当前的实现是针对 tex 文件的，对 tex 的语法进行额外处理，以保持语义的完整性。
 
 此外，Jina embedding 是一个多模态的 embedding 框架，支持多种数据类型的 embedding，如果你想使用其他格式的数据，可以参考 Jina 的文档，自行实现 embedding 模块。
 
 ### 更复杂的 RAG 交互逻辑
 
-本项目使用了 `llama_index` 的 `BaseQueryEngine` 作为 RAG 实现，并使用 `CondenseQuestionChatEngine` 支持多轮对话。如果你想采用流式输出或者更加复杂的交互逻辑，需要重新实现 `src/RAG.py` 中的 `constructChatEngine` 和 `constructVecDB` 函数，请参考 `llama_index` 的相关文档。
+本项目使用了 `llama_index` 的 `BaseQueryEngine` 作为 RAG 实现，并使用 `CondenseQuestionChatEngine` 支持多轮对话。如果你想采用流式输出或者更加复杂的交互逻辑，需要重新实现 [`src/RAG.py`](src/RAG.py) 中的 `constructChatEngine` 和 `constructVecDB` 函数，请参考 `llama_index` 的相关文档。
 
 ### 更广泛的 Web 界面定制
 

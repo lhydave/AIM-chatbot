@@ -81,7 +81,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 ## 配置文件
 
-系统使用 TOML 格式的配置文件，请参考 `src/auto_marker/sample_marker_config.toml` 创建您自己的配置文件。主要配置项包括 OpenReview 连接信息、LLM API 设置、文件路径、作业 ID 和批改提示模板。
+系统使用 TOML 格式的配置文件，请参考 [`sample_marker_config.toml`](sample_marker_config.toml) 文件，创建您自己的配置文件。主要配置项包括 OpenReview 连接信息、LLM API 设置、文件路径、作业 ID 和批改提示模板。
 
 ## 提交格式
 
@@ -95,7 +95,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 - LaTeX 数学公式
 - 代码和算法
 
-样例可以参考 `src/auto_marker/sample-homework/sample-markdown-homework.md` 和 `src/auto_marker/sample-homework/sample-latex-homework.tex` 文件。
+样例可以参考 [`sample-homework/sample-markdown-homework.md`](sample-homework/sample-markdown-homework.md) 和 [`sample-homework/sample-latex-homework.tex`](sample-homework/sample-tex-homework.tex) 文件。
 
 > *注意：请严格按照样例格式提交作业，否则可能导致系统出现错误。*
 
@@ -122,8 +122,8 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 ### 如何创建参考答案？
 
-参考答案应采用与学生提交相同的 Markdown 格式，放置在配置文件中指定的参考资料目录中。文件命名应为 `HW{作业ID}-answer.md`。也可参考 `src/auto_marker/sample-problem-material.md` 文件。
+参考答案应采用与学生提交相同的 Markdown 格式，放置在配置文件中指定的参考资料目录中。文件命名应为 `HW{作业ID}-answer.md`。也可参考 [`sample-problem-material.md`](sample-problem-material.md) 文件。
 
 ### 如何创建问题描述？
 
-问题描述同样使用 Markdown 格式，命名为 `HW{作业ID}-description.md`，放置在参考资料目录中。也可参考 `src/auto_marker/sample-problem-material.md` 文件。
+问题描述同样使用 Markdown 格式，命名为 `HW{作业ID}-description.md`，放置在参考资料目录中。也可参考 [`sample-problem-material.md`](sample-problem-material.md) 文件。

@@ -267,14 +267,20 @@ class OpenReviewInteract:
 
         valid_submissions = []
         failed_submission_titles = []
+        student_ids = set()
 
         tasks = []
         for submission in submissions:
             title = submission.content.get("title", "").get("value", "")
             try:
-                hw_id, _, _ = parse_submission_title(title)
+                hw_id, student_id, _ = parse_submission_title(title)
                 # If homework_id doesn't match, skip this submission
                 if hw_id != homework_id:
+                    continue
+
+                # Skip if student ID is already processed
+                if student_id in student_ids:
+                    logger.warning(f"Skipping duplicate submission for student {student_id}")
                     continue
 
                 # Create task for concurrent processing

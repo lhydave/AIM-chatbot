@@ -11,3 +11,4 @@ my_config.toml
 my_marker_config.toml
 .DS_store
 requirement.txt
+.vscode/

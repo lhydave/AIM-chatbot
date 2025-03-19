@@ -2,7 +2,7 @@
 
 ## 概述
 
-自动批改系统是 AIM-chatbot 系统的一个组件，用于对学生作业的自动批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM 将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。
+自动批改系统是 AIM-chatbot 系统的一个独立组件，用于对学生作业的自动批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM 将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。
 
 ## 功能特点
 
@@ -30,7 +30,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 - `--config` 或 `-c`: 可选，配置文件路径（默认：`./auto_marker/my_marker_config.toml`）
 - 工作流步骤选项（可单独或组合使用）：
   - `--download`: 从 OpenReview 下载提交
-  - `--reference`: 加载参考材料（标准答案和问题描述）
+  - `--reference`: 加载参考资料（标准答案和问题描述）
   - `--process`: 处理提交
   - `--mark`: 批改提交
   - `--post`: 将批改发布到 OpenReview
@@ -38,7 +38,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 ### 使用示例
 
-1. **完整工作流程**（下载、加载参考、处理、批改、发布）：
+1. **完整工作流程**（下载、加载参考资料、处理、批改、发布）：
    ```bash
    python marker_app.py --download --reference --process --mark --post
    ```
@@ -101,7 +101,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 ## 工作流程
 
 1. **下载提交**：从 OpenReview 下载学生提交
-2. **加载参考材料**：加载标准答案和问题描述
+2. **加载参考资料**：加载标准答案和问题描述
 3. **处理提交**：解析提交内容，提取关键部分
 4. **批改**：使用 LLM 评估学生答案与标准答案的匹配度
 5. **发布批改**：将批改结果发布回 OpenReview
@@ -121,8 +121,8 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 ### 如何创建参考答案？
 
-参考答案应采用与学生提交相同的 Markdown 格式，放置在配置文件中指定的参考材料目录中。文件命名应为 `HW{作业ID}-answer.md`。也可参考 `src/auto_marker/sample-problem-material.md` 文件。
+参考答案应采用与学生提交相同的 Markdown 格式，放置在配置文件中指定的参考资料目录中。文件命名应为 `HW{作业ID}-answer.md`。也可参考 `src/auto_marker/sample-problem-material.md` 文件。
 
 ### 如何创建问题描述？
 
-问题描述同样使用 Markdown 格式，命名为 `HW{作业ID}-description.md`，放置在参考材料目录中。也可参考 `src/auto_marker/sample-problem-material.md` 文件。
+问题描述同样使用 Markdown 格式，命名为 `HW{作业ID}-description.md`，放置在参考资料目录中。也可参考 `src/auto_marker/sample-problem-material.md` 文件。

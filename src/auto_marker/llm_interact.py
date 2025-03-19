@@ -4,15 +4,8 @@ from openai import OpenAI
 from dataclasses import dataclass
 from auto_marker.prompts import MarkPromptTemplate
 from auto_marker.basics import Answer, ProblemID
+from auto_marker.logging import logger
 import asyncio
-import logging
-
-# Set up basic logging configuration if not already configured
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
 
 @dataclass
 class LLMConfig:

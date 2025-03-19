@@ -107,29 +107,16 @@ python3 RAG.py
 - `xxx.tex is not a file or directory` 错误：请确保你把整个 tex 文件夹下载到本地，而不是只下载了 `main.tex` 文件
 - `tomllib` 相关的报错：请确保你已经正确填写了 `src/my_config.toml` 中的配置项，尤其是检查引号和括号是否匹配
 
-## 项目结构
 
-```
-AIM-chatbot/
-├── LICENSE                 # MIT许可证
-├── README.md              # 项目说明文档
-├── requirements.txt       # Python依赖包列表
-├── pytest.ini            # pytest配置文件
-├── src/                  # 源代码目录
-│   ├── __init__.py      
-│   ├── app.py           # Web应用主程序（Streamlit）
-│   ├── RAG.py           # RAG系统实现
-│   ├── content_construct.py  # 文本处理和分割
-│   ├── latex_defs.py    # LaTeX宏定义
-│   ├── prompts.py       # 提示词配置
-│   ├── util.py          # 工具函数
-│   ├── my_config.toml   # 个人配置文件（需自行创建）
-│   └── sample_config.toml  # 配置文件模板
-├── tests/               # 测试目录
-│   ├── test_content_construct.py  # 文本处理测试
-│   └── test_utils.py    # 工具函数测试
-└── storage/            # 向量数据库存储目录（自动创建）
-```
+## 组件
+
+### 智能问答系统
+
+主要功能是基于教材内容的智能问答，使用了检索增强生成（RAG）技术，将教材内容转换为向量数据库，然后通过大语言模型实现智能问答。
+
+### [自动批作业系统](./auto_marker/README.md)
+
+自动评分系统组件是一个独立组件，它可以全流程自动化学生作业的批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。详细的使用说明和配置选项请参阅[自动评分系统文档](./auto_marker/README.md)。
 
 ## 注意事项
 

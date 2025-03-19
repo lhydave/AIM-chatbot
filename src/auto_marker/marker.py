@@ -1,15 +1,16 @@
 import toml
 import asyncio
 import json
-import logging
 from typing import Any
 from pathlib import Path
 from dataclasses import dataclass
 
+import logging
+from auto_marker.logging import logger, configure_global_logger
 from auto_marker.openreview_interact import OpenReviewInteract, OpenReviewConfig
 from auto_marker.llm_interact import LLMInteractor, LLMConfig
-from auto_marker.text_processor import parse_content
-from auto_marker.basics import ProblemID, StudentSubmission, Answer, AnswerGroup, parse_problem_list, filter_answers
+from auto_marker.text_processor import parse_content_with_filter
+from auto_marker.basics import ProblemID, StudentSubmission, Answer, AnswerGroup, parse_problem_list
 
 
 @dataclass
@@ -113,13 +114,11 @@ class Marker:
         self.config = MarkerConfig.from_toml(config_path)
         self.config.validate()
 
-        # Set up logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            handlers=[logging.StreamHandler(), logging.FileHandler(f"marker_hw{self.config.homework_id}.log")],
-        )
-        self.logger = logging.getLogger(__name__)
+        # Configure the global logger
+        log_file = f"marker_hw{self.config.homework_id}_init.log"
+        configure_global_logger(level=logging.INFO, log_file=log_file)
+
+        logger.info(f"Initializing Marker with homework ID: {self.config.homework_id}")
 
         # Set up paths
         self.reference_materials_path = Path(self.config.paths["reference_materials"])
@@ -128,6 +127,10 @@ class Marker:
         )
         self.raw_submissions_path = Path(self.config.paths["raw_submissions"]) / f"HW{self.config.homework_id}"
         self.mark_logs_path = Path(self.config.paths["mark_logs"]) / f"HW{self.config.homework_id}"
+
+        # Create log directory
+        self.log_dir = Path("../log")
+        self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # Create directories if they don't exist
         self.reference_materials_path.mkdir(parents=True, exist_ok=True)
@@ -172,9 +175,9 @@ class Marker:
 
         # Check if reference materials exist
         if not self.reference_answer_file.exists():
-            self.logger.warning(f"Reference answer file {self.reference_answer_file} does not exist")
+            logger.warning(f"Reference answer file {self.reference_answer_file} does not exist")
         if not self.problem_description_file.exists():
-            self.logger.warning(f"Problem description file {self.problem_description_file} does not exist")
+            logger.warning(f"Problem description file {self.problem_description_file} does not exist")
 
     def _check_raw_submissions_exist(self) -> bool:
         """Check if all raw submissions are in self.processed_submissions."""
@@ -214,54 +217,50 @@ class Marker:
         Load reference answers and problem descriptions from files.
         """
 
-        self.logger.info(f"Loading reference materials from {self.reference_materials_path}...")
+        logger.info(f"Loading reference materials from {self.reference_materials_path}...")
 
-        self.logger.info(f"Loading reference answers from {self.reference_answer_file}...")
+        logger.info(f"Loading reference answers from {self.reference_answer_file}...")
 
         # Load reference answers
         if self.reference_answer_file.exists():
             with open(self.reference_answer_file, encoding="utf-8") as f:
-                self.reference_answers = parse_content(f.read(), "markdown", self.problem_list)
-                self.reference_answers = filter_answers(self.problem_list, self.reference_answers)
-                self.logger.info(f"Loaded {len(self.reference_answers)} reference answers.")
+                self.reference_answers = parse_content_with_filter(f.read(), "markdown", self.problem_list)
+                logger.info(f"Loaded {len(self.reference_answers)} reference answers.")
         else:
-            self.logger.warning(f"Reference answer file {self.reference_answer_file} does not exist")
+            logger.warning(f"Reference answer file {self.reference_answer_file} does not exist")
             self.reference_answers = AnswerGroup()
 
-        self.logger.info(f"Loading problem descriptions from {self.problem_description_file}...")
+        logger.info(f"Loading problem descriptions from {self.problem_description_file}...")
 
         # Load problem descriptions
         if self.problem_description_file.exists():
             with open(self.problem_description_file, encoding="utf-8") as f:
-                self.problem_descriptions = parse_content(f.read(), "markdown", self.problem_list)
-                self.problem_descriptions = filter_answers(self.problem_list, self.problem_descriptions)
-                self.logger.info(f"Loaded {len(self.problem_descriptions)} problem descriptions.")
+                self.problem_descriptions = parse_content_with_filter(f.read(), "markdown", self.problem_list)
+                logger.info(f"Loaded {len(self.problem_descriptions)} problem descriptions.")
         else:
-            self.logger.warning(f"Problem description file {self.problem_description_file} does not exist")
+            logger.warning(f"Problem description file {self.problem_description_file} does not exist")
             self.problem_descriptions = AnswerGroup()
 
-        self.logger.info("Reference materials loaded.")
+        logger.info("Reference materials loaded.")
 
     def download_submissions(self) -> None:
         """
         Download student submissions from OpenReview for the configured homework ID.
         """
-        self.logger.info(
-            f"Downloading submissions for homework: {self.config.homework_id} to {self.raw_submissions_path}"
-        )
+        logger.info(f"Downloading submissions for homework: {self.config.homework_id} to {self.raw_submissions_path}")
 
         # Use OpenReview client to fetch submissions
         submissions, failed_submissions = self.openreview_client.process_all_submissions(self.config.homework_id)
 
         if failed_submissions:
-            self.logger.warning(f"Failed to process {len(failed_submissions)} submissions:")
+            logger.warning(f"Failed to process {len(failed_submissions)} submissions:")
             for failed_submission in failed_submissions:
-                self.logger.warning(f"  - {failed_submission}")
+                logger.warning(f"  - {failed_submission}")
 
-        self.logger.info(f"Successfully downloaded {len(submissions)} submissions.")
+        logger.info(f"Successfully downloaded {len(submissions)} submissions.")
 
         # Save the submissions to disk
-        self.logger.info(f"Saving source code to {self.processed_submissions_path}")
+        logger.info(f"Saving source code to {self.processed_submissions_path}")
 
         for submission in submissions:
             self.processed_submissions[submission.student_id] = submission
@@ -273,11 +272,11 @@ class Marker:
         """
         Load processed submissions from JSON files if they exist.
         """
-        self.logger.info(f"Loading processed submissions from {self.processed_submissions_path}...")
+        logger.info(f"Loading processed submissions from {self.processed_submissions_path}...")
 
         submission_files = list(self.processed_submissions_path.glob("*.json"))
         if not submission_files:
-            self.logger.info("No processed submission files found.")
+            logger.info("No processed submission files found.")
             return
 
         for file_path in submission_files:
@@ -287,9 +286,9 @@ class Marker:
                     submission = StudentSubmission.from_json(submission_data)
                     self.processed_submissions[submission.student_id] = submission
             except Exception as e:
-                self.logger.error(f"Error loading submission from {file_path}: {e}")
+                logger.error(f"Error loading submission from {file_path}: {e}")
 
-        self.logger.info(f"Loaded {len(self.processed_submissions)} submissions.")
+        logger.info(f"Loaded {len(self.processed_submissions)} submissions.")
 
     def parse_submission(self, submission: StudentSubmission) -> StudentSubmission:
         """
@@ -305,15 +304,13 @@ class Marker:
         """
         # Parse the submission content
 
-        self.logger.info(f"Parsing submission {submission.student_id}-{submission.student_name}...")
-        parsed_content = parse_content(submission.raw_source_code, submission.code_language, self.problem_list)
-        self.logger.info(f"Parsed {len(parsed_content)} answers.")
-        self.logger.info("Filtering answers based on the problem list...")
-        filtered_content = filter_answers(self.problem_list, parsed_content)
-        self.logger.info(f"Filtered down to {len(filtered_content)} answers.")
+        logger.info(f"Parsing submission {submission.student_id}-{submission.student_name}...")
+        parsed_content = parse_content_with_filter(
+            submission.raw_source_code, submission.code_language, self.problem_list
+        )
 
         # Update the submission with the parsed content
-        submission.processed_source_code = filtered_content
+        submission.processed_source_code = parsed_content
         return submission
 
     def parse_submissions(self) -> None:
@@ -330,12 +327,12 @@ class Marker:
                     "No submissions available. Please download submissions first using download_submissions()."
                 )
 
-        self.logger.info("Parsing all submissions...")
+        logger.info("Parsing all submissions...")
 
         for student_id, submission in self.processed_submissions.items():
             self.processed_submissions[student_id] = self.parse_submission(submission)
 
-        self.logger.info("All submissions parsed.")
+        logger.info("All submissions parsed.")
 
     async def mark_problem(self, problem_id: ProblemID, submission: StudentSubmission) -> Answer:
         """
@@ -350,9 +347,7 @@ class Marker:
         Returns:
             The Answer object containing the mark
         """
-        self.logger.info(
-            f"Marking problem {problem_id} for submission {submission.student_id}-{submission.student_name}..."
-        )
+        logger.info(f"Marking problem {problem_id} for submission {submission.student_id}-{submission.student_name}...")
 
         # Get problem description and reference answer for this problem
         problem_description = self.problem_descriptions.get(problem_id, Answer("No problem description available"))
@@ -360,7 +355,7 @@ class Marker:
 
         # Get student's answer for this problem (or provide default)
         if not submission.processed_source_code:
-            self.logger.warning(f"No processed source code found for student {submission.student_id}")
+            logger.warning(f"No processed source code found for student {submission.student_id}")
             student_answer = Answer("No answer provided")
         else:
             student_answer = submission.processed_source_code.get(problem_id, Answer("No answer provided"))
@@ -378,11 +373,11 @@ class Marker:
                 logging_path=str(log_file),
             )
 
-            self.logger.info(f"Successfully marked problem {problem_id} for student {submission.student_id}")
+            logger.info(f"Successfully marked problem {problem_id} for student {submission.student_id}")
             return mark_result
 
         except Exception as e:
-            self.logger.error(f"Error marking problem {problem_id} for student {submission.student_id}: {e}")
+            logger.error(f"Error marking problem {problem_id} for student {submission.student_id}: {e}")
             # Return a default answer indicating the error
             error_answer = Answer(answer=f"Error during marking: {str(e)}")
             return error_answer
@@ -404,7 +399,7 @@ class Marker:
         Returns:
             The updated StudentSubmission object with marks
         """
-        self.logger.info(f"Marking submission {submission.student_id}-{submission.student_name}...")
+        logger.info(f"Marking submission {submission.student_id}-{submission.student_name}...")
 
         # Initialize an AnswerGroup to store marks
         marks = AnswerGroup()
@@ -436,7 +431,7 @@ class Marker:
         with open(mark_file, "w", encoding="utf-8") as f:
             f.write(marks.to_markdown_str())
 
-        self.logger.info(
+        logger.info(
             f"Successfully marked all problems for submission {submission.student_id}-{submission.student_name}"
         )
         return submission
@@ -468,7 +463,7 @@ class Marker:
         if not self._check_reference_materials_loaded():
             self.load_reference_materials()
 
-        self.logger.info(f"Marking all {len(self.processed_submissions)} submissions...")
+        logger.info(f"Marking all {len(self.processed_submissions)} submissions...")
 
         # Create tasks for each submission
         mark_tasks = []
@@ -484,17 +479,15 @@ class Marker:
             successful_count = 0
             for result in results:
                 if isinstance(result, Exception):
-                    self.logger.error(f"Error during marking: {result}")
+                    logger.error(f"Error during marking: {result}")
                 else:
                     successful_count += 1
 
-            self.logger.info(
-                f"Successfully marked {successful_count} out of {len(self.processed_submissions)} submissions"
-            )
+            logger.info(f"Successfully marked {successful_count} out of {len(self.processed_submissions)} submissions")
         except Exception as e:
-            self.logger.error(f"Error during marking process: {e}")
+            logger.error(f"Error during marking process: {e}")
 
-        self.logger.info("Marking process completed.")
+        logger.info("Marking process completed.")
 
     def post_all_marks(self) -> None:
         """
@@ -516,7 +509,7 @@ class Marker:
         if not self._check_submissions_marked():
             raise ValueError("No marks available. Please mark submissions first using mark_all_submissions().")
 
-        self.logger.info("Posting all marks to OpenReview...")
+        logger.info("Posting all marks to OpenReview...")
 
         # Create a dictionary to map student IDs to their review content
         review_contents = {}
@@ -527,7 +520,7 @@ class Marker:
         for student_id, submission in self.processed_submissions.items():
             # Skip submissions without marks
             if not submission.marks or len(submission.marks) == 0:
-                self.logger.warning(f"No marks found for student {student_id}, skipping...")
+                logger.warning(f"No marks found for student {student_id}, skipping...")
                 continue
 
             # Convert marks to markdown format for the review
@@ -536,10 +529,10 @@ class Marker:
             valid_submissions.append(submission)
 
         if not valid_submissions:
-            self.logger.warning("No valid submissions with marks found. Nothing to post.")
+            logger.warning("No valid submissions with marks found. Nothing to post.")
             return
 
-        self.logger.info(f"Sending {len(valid_submissions)} reviews to OpenReview...")
+        logger.info(f"Sending {len(valid_submissions)} reviews to OpenReview...")
 
         # Post the reviews using the OpenReview client
         try:
@@ -549,14 +542,93 @@ class Marker:
 
             # Report on results
             if successful_reviews:
-                self.logger.info(f"Successfully posted {len(successful_reviews)} reviews.")
+                logger.info(f"Successfully posted {len(successful_reviews)} reviews.")
 
             if failed_reviews:
-                self.logger.warning(f"Failed to post reviews for {len(failed_reviews)} students:")
+                logger.warning(f"Failed to post reviews for {len(failed_reviews)} students:")
                 for student_id in failed_reviews:
-                    self.logger.warning(f"  - {student_id}")
+                    logger.warning(f"  - {student_id}")
 
         except Exception as e:
-            self.logger.error(f"Error posting reviews to OpenReview: {e}")
+            logger.error(f"Error posting reviews to OpenReview: {e}")
 
-        self.logger.info("Mark posting process completed.")
+        logger.info("Mark posting process completed.")
+
+    async def run(self, steps: str = "all", log_level: str = "INFO") -> None:
+        """
+        Run the marking workflow with configurable steps.
+
+        Each step will use a separate log file, and steps will only run based on the specified parameter.
+        The workflow follows a logical progression: download -> load_references -> process -> mark -> post.
+
+        Args:
+            steps: Which steps to run, can be:
+                  - "all": Run all steps
+                  - "download": Download submissions only
+                  - "reference": Load reference materials only
+                  - "process": Process submissions only
+                  - "mark": Mark submissions only
+                  - "post": Post marks only
+                  - Or any combination with "+" (e.g., "download+process+mark")
+            log_level: Logging level for all steps ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+        """
+        hw_id = self.config.homework_id
+        steps = steps.lower().strip()
+
+        # Validate log level
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        log_level = log_level.upper()
+        if log_level not in valid_levels:
+            logger.warning(f"Invalid log level '{log_level}'. Using 'INFO' instead.")
+            log_level = "INFO"
+
+        run_all = steps == "all"
+        run_download = run_all or "download" in steps
+        run_reference = run_all or "reference" in steps
+        run_process = run_all or "process" in steps
+        run_mark = run_all or "mark" in steps
+        run_post = run_all or "post" in steps
+
+        # Download submissions
+        if run_download:
+            log_file = self.log_dir / f"marker_hw{hw_id}_download.log"
+            configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
+            logger.info(f"Starting download step for homework {hw_id}")
+            self.download_submissions()
+            logger.info("Download step completed")
+
+        # Load reference materials
+        if run_reference:
+            log_file = self.log_dir / f"marker_hw{hw_id}_reference.log"
+            configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
+            logger.info(f"Starting reference materials loading for homework {hw_id}")
+            self.load_reference_materials()
+            logger.info("Reference materials loading completed")
+
+        # Process submissions
+        if run_process:
+            log_file = self.log_dir / f"marker_hw{hw_id}_process.log"
+            configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
+            logger.info(f"Starting submissions processing for homework {hw_id}")
+            self.parse_submissions()
+            logger.info("Submissions processing completed")
+
+        # Mark submissions
+        if run_mark:
+            log_file = self.log_dir / f"marker_hw{hw_id}_mark.log"
+            configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
+            logger.info(f"Starting marking step for homework {hw_id}")
+            await self.mark_all_submissions()
+            logger.info("Marking step completed")
+
+        # Post marks to OpenReview
+        if run_post:
+            log_file = self.log_dir / f"marker_hw{hw_id}_post.log"
+            configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
+            logger.info(f"Starting posting step for homework {hw_id}")
+            self.post_all_marks()
+            logger.info("Posting step completed")
+
+        # Reset logger to default
+        configure_global_logger(level=log_level, log_file=f"marker_hw{hw_id}_init.log")
+        logger.info(f"Completed requested workflow steps for homework {hw_id}")

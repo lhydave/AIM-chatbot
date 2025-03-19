@@ -1,4 +1,5 @@
 import re
+from auto_marker.logging import logger
 
 
 def convert_to_arabic_number(text: str) -> int:
@@ -62,9 +63,7 @@ def convert_to_arabic_number(text: str) -> int:
                 # For characters like 一, 二, 三...
                 temp = temp * 10 + cn_num[text[i]]
         else:
-            raise ValueError(
-                f"Invalid character when converting {text} to Arabic number: {text[i]}"
-            )
+            raise ValueError(f"Invalid character when converting {text} to Arabic number: {text[i]}")
 
     # Add any remaining temporary value
     result += temp
@@ -88,7 +87,9 @@ def extract_chapter_id(text: str) -> str:
         try:
             return str(convert_to_arabic_number(match.group(1)))
         except ValueError:
+            logger.warning(f"Ill-formatted chapter ID: {text}, possibly cause a problem in the future")
             return match.group(1)
+    logger.warning(f"Ill-formatted chapter ID: {text}, possibly cause a problem in the future")
     return text
 
 
@@ -108,4 +109,5 @@ def extract_problem_id(text: str) -> str:
         if match.group(1).lower() == "extra":
             return "extra"
         return match.group(1)
+    logger.warning(f"Ill-formatted problem ID: {text}, possibly cause a problem in the future")
     return text

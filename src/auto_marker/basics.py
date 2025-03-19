@@ -15,6 +15,7 @@ from typing import Optional, Any, Literal
 from collections.abc import Iterable
 import re
 import copy
+from auto_marker.logging import logger
 
 
 @dataclass
@@ -213,7 +214,7 @@ class AnswerGroup:
         """Add a sub-answer to the answer for a problem ID."""
         if problem_id not in self.answers:
             self.answers[problem_id] = Answer(answer="")
-            print(f"Warning: Problem ID {problem_id} not found, creating a new answer with an empty main answer.")
+            logger.warning(f"Problem ID {problem_id} not found, creating a new answer with an empty main answer.")
         self.answers[problem_id].add_sub_answer(subproblem_id, sub_answer)
 
     def to_json(self) -> dict:
@@ -246,7 +247,7 @@ class AnswerGroup:
         # Sort the problem IDs
         sorted_problem_ids = sorted(self.answers.keys())
         if not sorted_problem_ids:
-            print("Warning: empty answer group")
+            logger.warning("Empty answer group")
             return result
         current_chapter = sorted_problem_ids[0].chapter_id
         result += f"## {answer_name} for Chapter {current_chapter}\n\n"
@@ -278,7 +279,7 @@ class AnswerGroup:
                 answer_group[problem_id] = answer
             except ValueError as e:
                 # Skip invalid problem IDs
-                print(f"Warning: Skipping invalid problem ID: {problem_id_str}. Error: {e}")
+                logger.warning(f"Skipping invalid problem ID: {problem_id_str}. Error: {e}")
 
         return answer_group
 
@@ -461,10 +462,12 @@ def filter_answers(
 
     for problem_id in problem_id_list:
         chapter_id = problem_id.chapter_id
+
+        logger.debug(f"Checking problem {problem_id}")
         problem_id_str = problem_id.problem_id
         found_problem_id = ProblemID.find_problem_id(answer_group.keys(), chapter_id, problem_id_str)
         if not found_problem_id:
-            print(f"Warning: Problem ID {problem_id} not found, use the default answer instead.")
+            logger.warning(f"Problem ID {problem_id} not found, use the default answer instead.")
             # Add the problem with a default answer
             filtered_answer_group[problem_id] = Answer(answer=default_answer)
             if not problem_id.has_subproblems():
@@ -472,6 +475,7 @@ def filter_answers(
             for subproblem_id in problem_id.subproblem_id:
                 filtered_answer_group.add_sub_answer(problem_id, subproblem_id, default_answer)
         else:
+            logger.debug(f"Found problem {found_problem_id} in chapter {chapter_id}")
             # Add the existing answer
             filtered_answer_group[problem_id] = copy.deepcopy(answer_group[found_problem_id])
 
@@ -483,14 +487,15 @@ def filter_answers(
 
             # check the subproblems
             for subproblem_id in problem_id.subproblem_id:
-                print(subproblem_id)
+                logger.debug(f"Checking subproblem {subproblem_id} for problem {problem_id}")
                 if subproblem_id not in found_problem_id.subproblem_id:
-                    print(
-                        f"Warning: Subproblem ID {subproblem_id} not found for {problem_id}, use the default answer instead."  # noqa: E501
+                    logger.warning(
+                        f"Subproblem ID {subproblem_id} not found for {problem_id}, use the default answer instead."  # noqa: E501
                     )
 
                     filtered_answer_group.add_sub_answer(problem_id, subproblem_id, default_answer)
                 else:
+                    logger.debug(f"Found subproblem {subproblem_id} for problem {problem_id} in chapter {chapter_id}")
                     filtered_answer_group.add_sub_answer(
                         problem_id,
                         subproblem_id,

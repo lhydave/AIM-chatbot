@@ -7,14 +7,8 @@ import asyncio
 import os
 import zipfile
 import chardet
-import logging
+from auto_marker.logging import logger
 from auto_marker.basics import StudentSubmission, parse_submission_title
-
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
 
 # Files to skip when extracting ZIP files
 ZIP_SKIP_FILES = [

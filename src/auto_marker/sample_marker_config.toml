@@ -1,0 +1,115 @@
+# OpenReview configuration
+[openreview]
+username = "your_email@example.com"
+password = "your_password"
+venue_id = "PKU.edu/2025/Spring/AIM"
+
+# LLM configuration
+[llm]
+base_url = "https://api.openai.com/v1"
+api_key = "your_openai_api_key"
+model = "gpt-4-turbo"
+temperature = 0.5
+max_trials = 5
+
+# Directory configurations
+[paths]
+# Path to the directory containing reference materials: problem descriptions and reference answers
+reference_materials = "../reference_materials"
+# Path to the directory containing processed submissions
+processed_submissions = "../processed_submissions"
+# Path to the directory containing raw submissions
+raw_submissions = "../raw_submissions"
+# Path to the directory containing human readable mark logs of the interactions with the LLM
+mark_logs = "../mark_logs"
+
+# Homework ID to process
+homework_id = "1"
+
+# Problem list configuration
+# The format follows "chapter X: problem1,problem2,problem3(subproblem1)(subproblem2),..."
+# Each line represents problems for a chapter
+problem_list = """
+chapter 1: 1,2,3
+chapter 2: 1,2(1)(2),3
+"""
+
+# Marking prompt templates
+[prompts]
+# Template used for problems without subproblems
+# Available placeholders:
+# - {problem_description}: The full problem description
+# - {reference_answer}: The reference answer
+# - {student_answer}: The student's submitted answer
+# This template is used when evaluating a complete problem that doesn't have subproblems
+no_subproblem_template = """
+You are an AI assistant tasked with reviewing a student homework submission.
+
+Please analyze the student's solution based on the following information:
+
+# Problem Description
+{problem_description}
+
+# Reference Answer
+{reference_answer}
+
+# Student Answer
+{student_answer}
+
+Please provide detailed feedback including:
+1. A concise summary of the student's approach and reasoning
+2. Identification of any conceptual errors or misunderstandings
+3. Specific details that are incorrect or could be improved
+4. Constructive suggestions for improvement
+
+Format your response in markdown. Do not assign any numerical scores.
+"""
+
+# Template for the initial round of a problem with subproblems
+# Available placeholders:
+# - {problem_description}: The overall problem description (before all subproblems)
+# - {subproblem_nums}: The number of subproblems to evaluate
+# This template is used as the first message when starting evaluation of a problem
+# that contains multiple subproblems, before any specific subproblem is evaluated
+subproblem_first_round_template = """
+You are an AI assistant tasked with reviewing a student homework submission that contains multiple subproblems.
+
+This is the first round of evaluation where you'll receive the overall problem description.
+Later you'll be asked to evaluate each subproblem separately.
+
+# Problem Description Ahead of Subproblems
+{problem_description}
+
+The problem has {subproblem_nums} subproblems.
+
+Please acknowledge that you've received the problem description and are ready to evaluate the subproblems.
+"""
+
+# Template for evaluating individual subproblems
+# Available placeholders:
+# - {problem_description}: The description for this specific subproblem
+# - {reference_answer}: The reference answer for this subproblem
+# - {student_answer}: The student's answer for this subproblem
+# - {subproblem_id}: The identifier of the subproblem (e.g., "1", "2", "a", "b")
+# This template is used for each subproblem after the first round,
+# allowing detailed evaluation of individual parts of a multi-part problem
+subproblem_round_template = """
+You are now evaluating subproblem {subproblem_id}.
+
+# Subproblem Description
+{problem_description}
+
+# Reference Answer
+{reference_answer}
+
+# Student Answer
+{student_answer}
+
+Please provide detailed feedback for this subproblem including:
+1. A concise summary of the student's approach and reasoning
+2. Identification of any conceptual errors or misunderstandings
+3. Specific details that are incorrect or could be improved
+4. Constructive suggestions for improvement
+
+Format your response in markdown. Do not assign any numerical scores.
+"""

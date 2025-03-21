@@ -13,12 +13,12 @@
 - 使用异步批改：支持并行批改多个学生提交，显著提高效率
 - 高度定制化：支持自定义配置，包括 LLM 参数、文件路径、作业 ID、批改提示等
 - 日志记录：记录全流程的详细信息，方便追踪和调试
-- 大模型与人工校验结合：使用大语言模型（LLM）进行批改，同时有人类可读的批改结果，方便人工校验
+- 大模型与人工校验结合：使用大语言模型（LLM）进行批改，同时有人类可读的批改结果，方便人工校验和修改
 
 
 ## 使用方法
 
-自动批改系统通过命令行应用程序运行。工作流程通常包含下载、处理、批改和发布结果这几个步骤，这些步骤可以单独或组合执行。
+自动批改系统通过命令行应用程序运行。工作流程通常包含下载、加载参考资料、处理、批改和发布结果这几个步骤，这些步骤可以单独或组合执行。
 
 ### 基本用法
 
@@ -34,14 +34,15 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
   - `--reference`: 加载参考资料（标准答案和问题描述）
   - `--process`: 处理提交
   - `--mark`: 批改提交
-  - `--post`: 将批改发布到 OpenReview
+  - `--post-llm`: 将LLM批改结果发布到 OpenReview
+  - `--post-human`: 将人工校验后的批改结果发布到 OpenReview
 - `--log-level` 或 `-l`: 可选，日志级别（DEBUG, INFO, WARNING, ERROR, CRITICAL）
 
 ### 使用示例
 
-1. **完整工作流程**（下载、加载参考资料、处理、批改、发布）：
+1. **完整工作流程**（下载、加载参考资料、处理、批改、发布LLM结果）：
    ```bash
-   python marker_app.py --download --reference --process --mark --post
+   python marker_app.py --download --reference --process --mark --post-llm
    ```
 
 2. **仅下载提交**：
@@ -56,12 +57,17 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 4. **使用自定义配置文件并设置日志级别**：
    ```bash
-   python marker_app.py -c ./my_custom_config.toml --download --process --mark --post -l DEBUG
+   python marker_app.py -c ./my_custom_config.toml --download --process --mark --post-llm -l DEBUG
    ```
 
 5. **仅处理已下载的提交**：
    ```bash
    python marker_app.py --reference --process
+   ```
+
+6. **人工校验后发布结果**：
+   ```bash
+   python marker_app.py --post-human
    ```
 
 ### 一般工作流逻辑
@@ -73,11 +79,14 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 3. **加载参考资料（--reference）**：从指定位置加载标准答案和问题描述
 4. **处理（--process）**：解析提交内容，将其结构化并提取问题答案，存储到 `processed_submissions`
 5. **批改（--mark）**：使用 LLM 对处理后的提交内容进行批改，生成批改结果
-6. **发布（--post）**：将批改结果上传至 OpenReview 平台
+6. **发布LLM结果（--post-llm）**：将自动批改结果上传至 OpenReview 平台
+7. **人工校验和发布（--post-human）**：查看和修改批改结果，然后将最终结果上传至 OpenReview 平台
 
-您可以根据需要选择执行部分步骤。例如，如果提交已下载但需要重新批改，可以只运行 `--mark --post` 步骤。
+您可以根据需要选择执行部分步骤。例如，如果提交已下载但需要重新批改，可以只运行 `--mark --post-llm` 步骤。
 
 > **注意**：确保在运行步骤前已准备好前置步骤所需的数据。例如，要运行 `--mark` 步骤，必须已有处理好的提交数据。
+> 
+> 特别注意，尽管课程可以设置提交的格式要求，但是人难免会忽略或者错误理解这一格式要求，因此，如果对可靠性要求很高，请务必人工核查保证--process步骤之后对题目的分解是正确的。系统日志会把所有可能出现的问题记录下来，方便人工核查。
 
 ## 配置文件
 
@@ -90,7 +99,6 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 - 章节结构（标题和子标题）
 - 子问题结构
 - 分类讨论
-- 图片支持
 - 表格支持
 - LaTeX 数学公式
 - 代码和算法
@@ -105,7 +113,9 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 2. **加载参考资料**：加载标准答案和问题描述
 3. **处理提交**：解析提交内容，提取关键部分
 4. **批改**：使用 LLM 评估学生答案与标准答案的匹配度
-5. **发布批改**：将批改结果发布回 OpenReview
+5. **发布LLM批改**：将自动批改结果发布回 OpenReview
+6. **人工校验**：查看和修改批改结果
+7. **发布人工批改**：将最终批改结果发布回 OpenReview
 
 ## 存储内容
 
@@ -113,9 +123,12 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 - **原始提交**：保存在 `raw_submissions/HW{作业ID}` 目录中，包括学生的 PDF 文件、原始压缩包和解压缩后的所有文件
 - **处理后的提交**：保存在 `processed_submissions/HW{作业ID}` 目录中
-  - `{学生ID}-{学生姓名}.json`: 包含解析后的提交内容和批改结果
-  - `{学生ID}-{学生姓名}-marks.md`: 包含批改结果的 Markdown 格式文件，可直接发布到 OpenReview
-- **批改日志**：保存在 `mark_logs/HW{作业ID}` 目录中，每个问题一个日志文件，记录了和 LLM 的所有交互，包括思考内容
+  - `submission{提交编号}-{学生ID}-{学生姓名}.json`: 包含解析后的提交内容和批改结果
+  - `submission{提交编号}-{学生ID}-{学生姓名}-llm_marks.md`: 包含LLM批改结果的 Markdown 格式文件，可直接发布到 OpenReview
+- **人工批改文件**：保存在 `human_marks/HW{作业ID}` 目录中
+  - `submission{提交编号}-{学生ID}-{学生姓名}.pdf`: 学生提交的PDF文件，方便查看原始内容
+  - `submission{提交编号}-{学生ID}-{学生姓名}-human_marks.md`: LLM批改结果的副本，用于人工修改后发布
+- **批改日志**：保存在 `mark_logs/HW{作业ID}` 目录中，每个问题一个日志文件（格式为 `submission{提交编号}_{问题ID}.txt`），记录了和 LLM 的所有交互，包括思考内容（如果有）
 - **系统日志**：保存在 `log` 目录中，每个步骤一个日志文件，记录了系统运行的详细信息
 
 ## 常见问题
@@ -127,3 +140,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 ### 如何创建问题描述？
 
 问题描述同样使用 Markdown 格式，命名为 `HW{作业ID}-description.md`，放置在参考资料目录中。也可参考 [`sample-problem-material.md`](sample-problem-material.md) 文件。
+
+### 如何处理人工校验？
+
+系统会在 `human_marks` 目录中为每个提交创建一个 Markdown 文件，您可以直接编辑这些文件来修改批改内容。完成编辑后，运行 `--post-human` 步骤发布修改后的结果。

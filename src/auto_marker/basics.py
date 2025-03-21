@@ -365,15 +365,18 @@ class StudentSubmission:
         raw_source_code: Original source code content from the student's submission files.
         processed_source_code: Processed version of the source code which is organized using a TextProcessor, if available.
         marks: Marks assigned to the submission, if available.
+        human_marks: Human-verified marks assigned to the submission, if available.
     """  # noqa: E501
 
     homework_id: str
     student_id: str
     student_name: str
+    submission_number: str
     raw_source_code: str
     code_language: Literal["markdown", "tex"]
     processed_source_code: Optional[AnswerGroup] = None
     marks: Optional[AnswerGroup] = None
+    human_marks: Optional[str] = None
 
     def to_json(self) -> dict[str, Any]:
         """Convert the StudentSubmission to a JSON-serializable dictionary.
@@ -385,6 +388,7 @@ class StudentSubmission:
             "homework_id": self.homework_id,
             "student_id": self.student_id,
             "student_name": self.student_name,
+            "submission_number": self.submission_number,
             "raw_source_code": self.raw_source_code,
             "code_language": self.code_language,
         }
@@ -396,6 +400,10 @@ class StudentSubmission:
         # Include marks if available
         if self.marks is not None:
             result["marks"] = self.marks.to_json()
+
+        # Include human_marks if available
+        if self.human_marks is not None:
+            result["human_marks"] = self.human_marks
 
         return result
 
@@ -412,14 +420,18 @@ class StudentSubmission:
         if "marks" in json_dict:
             marks = AnswerGroup.from_json(json_dict["processed_source_code"])
 
+        human_marks = json_dict.get("human_marks", None)
+
         return cls(
             homework_id=json_dict["homework_id"],
             student_id=json_dict["student_id"],
             student_name=json_dict["student_name"],
+            submission_number=json_dict["submission_number"],
             raw_source_code=json_dict["raw_source_code"],
             code_language=json_dict["code_language"],
             processed_source_code=processed_source_code,
             marks=marks,
+            human_marks=human_marks,
         )
 
 

@@ -7,6 +7,7 @@ from auto_marker.basics import Answer, ProblemID
 from auto_marker.logging import logger
 import asyncio
 
+
 @dataclass
 class LLMConfig:
     """Configuration class for LLM settings"""
@@ -22,9 +23,7 @@ class LLMConfig:
 
     def get_client(self) -> OpenAI:
         """Create and return an OpenAI client with the config settings"""
-        logger.info(
-            f"Creating OpenAI client with base_url: {self.base_url}, model: {self.model}"
-        )
+        logger.info(f"Creating OpenAI client with base_url: {self.base_url}, model: {self.model}")
         return OpenAI(api_key=self.api_key, base_url=self.base_url)
 
 
@@ -41,9 +40,7 @@ class LLMInteractor:
         self.client = config.get_client()
         self.messages = []
         self.reasoning_history = []  # To store reasoning content when available
-        logger.info(
-            f"Initialized LLMInteractor with model: {config.model}, temperature: {config.temperature}"
-        )
+        logger.info(f"Initialized LLMInteractor with model: {config.model}, temperature: {config.temperature}")
 
     def _reset_conversation(self):
         """Reset conversation history for a new problem."""
@@ -65,15 +62,11 @@ class LLMInteractor:
         """
         last_exception = None
         message_length = sum(len(str(m.get("content", ""))) for m in messages)
-        logger.info(
-            f"Calling LLM API with {len(messages)} messages (total length: ~{message_length} chars)"
-        )
+        logger.info(f"Calling LLM API with {len(messages)} messages (total length: ~{message_length} chars)")
 
         for attempt in range(self.config.max_trials):
             try:
-                logger.debug(
-                    f"Attempt {attempt + 1}/{self.config.max_trials} to call LLM API"
-                )
+                logger.debug(f"Attempt {attempt + 1}/{self.config.max_trials} to call LLM API")
                 # OpenAI's client is synchronous, so we don't use await here
                 response = self.client.chat.completions.create(
                     model=self.config.model,
@@ -84,9 +77,7 @@ class LLMInteractor:
                 return response
             except Exception as e:
                 last_exception = e
-                logger.warning(
-                    f"LLM API call failed (attempt {attempt + 1}/{self.config.max_trials}): {str(e)}"
-                )
+                logger.warning(f"LLM API call failed (attempt {attempt + 1}/{self.config.max_trials}): {str(e)}")
                 if attempt < self.config.max_trials - 1:
                     backoff_time = 2**attempt
                     logger.info(f"Retrying in {backoff_time} seconds...")
@@ -94,9 +85,7 @@ class LLMInteractor:
                     await asyncio.sleep(backoff_time)
 
         # If we get here, all attempts failed
-        logger.error(
-            f"All {self.config.max_trials} attempts to call LLM API failed. Last error: {str(last_exception)}"
-        )
+        logger.error(f"All {self.config.max_trials} attempts to call LLM API failed. Last error: {str(last_exception)}")
         raise last_exception or Exception("All attempts to call LLM API failed")
 
     async def first_round_interaction(
@@ -114,9 +103,7 @@ class LLMInteractor:
             student_answer: The student's answer to the problem
             subproblem_nums: The number of subproblems in the problem
         """
-        logger.info(
-            f"Starting first round interaction with {subproblem_nums} subproblems"
-        )
+        logger.info(f"Starting first round interaction with {subproblem_nums} subproblems")
 
         # Reset conversation for new problem
         self._reset_conversation()
@@ -136,9 +123,7 @@ class LLMInteractor:
                 # For problems without subproblems, include all information
                 prompt_template = MarkPromptTemplate(
                     template=self.config.no_subproblem_template,
-                    problem_description=problem_description.to_markdown_str(
-                        "problem description"
-                    ),
+                    problem_description=problem_description.to_markdown_str("problem description"),
                     reference_answer=reference_answer.to_markdown_str("reference answer"),
                     student_answer=student_answer.to_markdown_str("student answer"),
                     subproblem_nums=subproblem_nums,
@@ -147,9 +132,7 @@ class LLMInteractor:
             # Format the prompt
             prompt = prompt_template.to_prompt()
             prompt_length = len(prompt)
-            logger.debug(
-                f"Generated first round prompt with length: {prompt_length} characters"
-            )
+            logger.debug(f"Generated first round prompt with length: {prompt_length} characters")
 
             # Add the user message
             self.messages.append({"role": "user", "content": prompt})
@@ -161,9 +144,7 @@ class LLMInteractor:
             # Extract and store the response
             response_content = response.choices[0].message.content
             response_length = len(response_content) if response_content else 0
-            logger.info(
-                f"Received first round response from LLM (length: {response_length} characters)"
-            )
+            logger.info(f"Received first round response from LLM (length: {response_length} characters)")
 
             self.messages.append({"role": "assistant", "content": response_content})
 
@@ -171,9 +152,7 @@ class LLMInteractor:
             if hasattr(response.choices[0].message, "reasoning_content"):
                 reasoning_content = response.choices[0].message.reasoning_content  # type: ignore
                 reasoning_length = len(reasoning_content) if reasoning_content else 0
-                logger.debug(
-                    f"Received reasoning content (length: {reasoning_length} characters)"
-                )
+                logger.debug(f"Received reasoning content (length: {reasoning_length} characters)")
                 self.reasoning_history.append(reasoning_content)
             else:
                 logger.debug("No reasoning content available in this response")
@@ -200,24 +179,18 @@ class LLMInteractor:
             subproblem_id: The ID of the subproblem
             is_first_subproblem: Whether this is the first subproblem
         """
-        logger.info(
-            f"Starting subproblem interaction for subproblem ID: {subproblem_id}"
-        )
+        logger.info(f"Starting subproblem interaction for subproblem ID: {subproblem_id}")
 
         try:
             if is_first_subproblem:
                 # For first subproblem, include main problem answers along with subproblem
                 prompt_template = MarkPromptTemplate(
                     template=self.config.subproblem_prompt_template,
-                    problem_description=problem_description.get_sub_answer(
-                        subproblem_id, "problem description"
-                    ),
+                    problem_description=problem_description.get_sub_answer(subproblem_id, "problem description"),
                     # Include both main reference answer and subproblem reference answer
                     reference_answer=reference_answer.answer
                     + "\n\n"
-                    + reference_answer.get_sub_answer(
-                        subproblem_id, "reference answer"
-                    ),
+                    + reference_answer.get_sub_answer(subproblem_id, "reference answer"),
                     # Include both main student answer and subproblem student answer
                     student_answer=student_answer.answer
                     + "\n\n"
@@ -228,24 +201,16 @@ class LLMInteractor:
                 # For subsequent subproblems, keep original behavior
                 prompt_template = MarkPromptTemplate(
                     template=self.config.subproblem_prompt_template,
-                    problem_description=problem_description.get_sub_answer(
-                        subproblem_id, "problem description"
-                    ),
-                    reference_answer=reference_answer.get_sub_answer(
-                        subproblem_id, "reference answer"
-                    ),
-                    student_answer=student_answer.get_sub_answer(
-                        subproblem_id, "student answer"
-                    ),
+                    problem_description=problem_description.get_sub_answer(subproblem_id, "problem description"),
+                    reference_answer=reference_answer.get_sub_answer(subproblem_id, "reference answer"),
+                    student_answer=student_answer.get_sub_answer(subproblem_id, "student answer"),
                     subproblem_id=subproblem_id,
                 )
 
             # Format the prompt
             prompt = prompt_template.to_prompt()
             prompt_length = len(prompt)
-            logger.debug(
-                f"Generated subproblem prompt with length: {prompt_length} characters"
-            )
+            logger.debug(f"Generated subproblem prompt with length: {prompt_length} characters")
 
             # Add the user message
             self.messages.append({"role": "user", "content": prompt})
@@ -257,9 +222,7 @@ class LLMInteractor:
             # Extract and store the response
             response_content = response.choices[0].message.content
             response_length = len(response_content) if response_content else 0
-            logger.info(
-                f"Received subproblem {subproblem_id} response from LLM (length: {response_length} characters)"
-            )
+            logger.info(f"Received subproblem {subproblem_id} response from LLM (length: {response_length} characters)")
 
             self.messages.append({"role": "assistant", "content": response_content})
 
@@ -267,9 +230,7 @@ class LLMInteractor:
             if hasattr(response.choices[0].message, "reasoning_content"):
                 reasoning_content = response.choices[0].message.reasoning_content  # type: ignore
                 reasoning_length = len(reasoning_content) if reasoning_content else 0
-                logger.debug(
-                    f"Received subproblem reasoning content (length: {reasoning_length} characters)"
-                )
+                logger.debug(f"Received subproblem reasoning content (length: {reasoning_length} characters)")
                 self.reasoning_history.append(reasoning_content)
             else:
                 logger.debug("No reasoning content available in this response")
@@ -319,10 +280,7 @@ class LLMInteractor:
                     # Reasoning content (if available)
                     header = "Reasoning Content".center(90, "=")
                     f.write(f"{header}\n")
-                    if (
-                        round_idx < len(self.reasoning_history)
-                        and self.reasoning_history[round_idx]
-                    ):
+                    if round_idx < len(self.reasoning_history) and self.reasoning_history[round_idx]:
                         f.write(f"{self.reasoning_history[round_idx]}\n\n")
                     else:
                         f.write("No reasoning content available\n\n")
@@ -330,9 +288,7 @@ class LLMInteractor:
                     # LLM output
                     header = "LLM Output".center(90, "=")
                     f.write(f"{header}\n")
-                    f.write(
-                        f"{self.messages[assistant_msg_idx]['content']}\n\n"
-                    )
+                    f.write(f"{self.messages[assistant_msg_idx]['content']}\n\n")
 
                     # Round end
                     if round_idx == 0:
@@ -340,9 +296,7 @@ class LLMInteractor:
                     else:
                         subprob_idx = round_idx - 1
                         subprob_id = problem_id.subproblem_id[subprob_idx]
-                        f.write(
-                            f"Round {round_idx + 1} ends (Subproblem {subprob_id})\n\n"
-                        )
+                        f.write(f"Round {round_idx + 1} ends (Subproblem {subprob_id})\n\n")
 
             logger.info(f"Successfully wrote conversation log to {logging_path}")
 
@@ -400,7 +354,17 @@ class LLMInteractor:
 
             # Create a new Answer object to store the grading results
             logger.info("Creating final grading result")
-            marks = Answer(answer=self.messages[1]["content"])
+
+            # Initialize marks differently based on whether we have subproblems
+            if problem_id.has_subproblems():
+                # For problems with subproblems, don't use the first round response
+                # since it's just for confirmation, not for actual grading
+                logger.debug("Problem has subproblems - discarding first round response")
+                marks = Answer(answer="")
+            else:
+                # For problems without subproblems, use the first round response
+                logger.debug("Problem has no subproblems - using first round response")
+                marks = Answer(answer=self.messages[1]["content"])
 
             # Process subproblem responses
             if problem_id.has_subproblems():
@@ -408,15 +372,13 @@ class LLMInteractor:
                 # For each subproblem, add the corresponding response as a sub-answer
                 for i, subproblem_id in enumerate(problem_id.subproblem_id):
                     # Get the message index for this subproblem (each interaction adds two messages)
-                    message_idx = (
-                        3 + (i * 2)
-                    )  # First round has indices 0,1; first subproblem starts at 2,3; etc.
+                    message_idx = 3 + (i * 2)  # First round has indices 0,1; first subproblem starts at 2,3; etc.
                     if message_idx < len(self.messages):
                         subproblem_content = self.messages[message_idx]["content"]
                         logger.debug(f"Adding response for subproblem {subproblem_id}")
                         marks.add_sub_answer(subproblem_id, subproblem_content)
 
-            # Log the conversation if a logging path is provided
+            # Log the conversatio alogging path is provided
             if logging_path:
                 self._save_conversation_log(logging_path, problem_id)
 

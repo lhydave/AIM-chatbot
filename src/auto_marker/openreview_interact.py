@@ -318,8 +318,12 @@ class OpenReviewInteract:
         4. Return structured StudentSubmission object
         """
         title = submission.content.get("title", "").get("value", "")
+        submission_number = submission.number
+        if not submission_number:
+            logger.error(f"Submission number not found for submission {title}")
+            raise ValueError(f"Submission number not found for submission {title}")
 
-        logger.info(f"Processing submission with title: {title}")
+        logger.info(f"Processing submission {submission_number} with title: {title}")
 
         try:
             homework_id, student_id, student_name = parse_submission_title(title)
@@ -331,11 +335,11 @@ class OpenReviewInteract:
             f"Parsed title successfully: Homework ID: {homework_id}, Student ID: {student_id}, Student Name: {student_name}"  # noqa: E501
         )
 
-        # Create directory structure: submission_store_path/HWxxx/学号-姓名/
+        # Create directory structure: submission_store_path/HWxxx/submission[submission_number]-学号-姓名/
         submission_dir = os.path.join(
             self.config.submission_store_path,
             f"HW{homework_id}",
-            f"{student_id}-{student_name}",
+            f"submission{submission_number}-{student_id}-{student_name}",
         )
         os.makedirs(submission_dir, exist_ok=True)
 
@@ -348,110 +352,201 @@ class OpenReviewInteract:
         # Download PDF
         pdf_binary = None
         try:
-            logger.info(f"Downloading PDF for submission {title}")
+            logger.info(f"Downloading PDF for submission {submission_number}")
             pdf_binary = self.client.get_attachment("pdf", submission_id)
             save_and_process_pdf(pdf_binary, title, submission_dir)
-            logger.info(f"Successfully downloaded PDF for {title}")
+            logger.info(f"Successfully downloaded PDF for submission {submission_number}")
         except Exception as e:
-            logger.warning(f"Could not download PDF for submission {title}: {str(e)}")
+            logger.warning(f"Could not download PDF for submission {submission_number}: {str(e)}")
 
         # Download source code
         source_binary = None
         raw_source_code = ""
         code_language: Literal["markdown", "tex"] = "markdown"
         try:
-            logger.info(f"Downloading source code for submission {title}")
+            logger.info(f"Downloading source code for submission {submission_number}")
             source_binary = self.client.get_attachment("source_code", submission_id)
             raw_source_code, code_language = process_source_code(source_binary, title, submission_dir)
-            logger.info(f"Successfully processed source code for {title}")
+            logger.info(f"Successfully processed source code for submission {submission_number}")
         except Exception as e:
-            logger.warning(f"Could not download source files for submission {title}: {str(e)}")
+            logger.warning(f"Could not download source files for submission {submission_number}: {str(e)}")
 
         # Create and return StudentSubmission object
         return StudentSubmission(
             homework_id=homework_id,
             student_id=student_id,
             student_name=student_name,
+            submission_number=submission_number,
             raw_source_code=raw_source_code,
             code_language=code_language,
             processed_source_code=None,
         )
 
-    def post_reviews(
+    def post_comments(
         self,
         student_submissions: list[StudentSubmission],
-        review_contents: dict[str, str],
+        comment_contents: dict[str, str],
     ) -> tuple[list[str], list[str]]:
         """
-        Post reviews for student submissions to OpenReview.
+        Post comments for student submissions to OpenReview.
 
         Args:
-            student_submissions: List of student submissions to review
-            review_contents: Dictionary mapping student IDs to review content
+            student_submissions: List of student submissions to comment on
+            comment_contents: Dictionary mapping submission numbers to comment content
 
         Returns:
             Tuple containing:
-            - List of successfully posted review submission IDs
-            - List of student IDs for which review posting failed
+            - List of successfully posted comment submission IDs
+            - List of submission numbers for which comment posting failed
         """
-        ret = asyncio.run(self.async_post_reviews(student_submissions, review_contents))
+        ret = asyncio.run(self.async_post_comments(student_submissions, comment_contents))
         return ret
 
-    async def post_single_review(
-        self, student_submission: StudentSubmission, submission: Note, review_content: str
+    async def post_single_comment(
+        self, student_submission: StudentSubmission, submission: Note, comment_content: str
     ) -> None:
         """
-        Post a review for a single student submission.
+        Post a comment for a single student submission.
+        First tries using Official_Review, if that fails, falls back to Official_Comment.
+        For longer comments, splits them into multiple chunks of 5000 characters each.
 
         Args:
-            student_submission: The student submission to review
+            student_submission: The student submission to comment on
             submission: The OpenReview submission Note
-            review_content: The content of the review
+            comment_content: The content of the comment
         """
         submission_number = submission.number
-        logger.info(f"Posting review for submission {submission_number} (Student: {student_submission.student_id})")
+        if not submission_number:
+            logger.error(f"Submission number not found for submission {submission_number}")
+            raise ValueError(f"Submission number not found for submission {submission_number}")
+
+        logger.info(
+            f"Posting comment for submission {submission_number} ({student_submission.student_id}-{student_submission.student_name})"  # noqa: E501
+        )
 
         try:
-            # Use the user's own profile ID directly instead of looking for anonymous groups
+            # Get user signature
             if not self.client.profile:
-                logger.error("User profile not found, cannot post review")
-                raise ValueError("User profile not found, cannot post review")
+                logger.error("User profile not found, cannot post comment")
+                raise ValueError("User profile not found, cannot post comment")
 
             signature = self.client.profile.id
+            if not signature:
+                logger.error("User signature not found, cannot post comment")
+                raise ValueError("User signature not found, cannot post comment")
             logger.info(f"Using direct user profile as signature: {signature}")
 
-            # Create the review note
-            review_note = openreview.api.Note(
-                content={
-                    "title": {"value": f"Marks for {student_submission.student_id}"},
-                    "review": {"value": review_content},
-                }
-            )
+            # First try to post as Official_Review
+            try:
+                await self._try_post_as_review(submission_number, signature, comment_content)
+                logger.info(f"Successfully posted review for submission {submission_number}")
+                return
+            except Exception as e:
+                logger.warning(f"Failed to post as Official_Review for submission {submission_number}: {str(e)}")
+                logger.info(f"Falling back to Official_Comment for submission {submission_number}")
 
-            # Post the review using direct signature
-            review_edit = self.client.post_note_edit(
-                invitation=f"{self.config.venue_id}/Submission{submission_number}/-/Official_Review",
-                signatures=[signature],
-                note=review_note,
-            )
-
-            logger.debug(f"Review edit response: {review_edit}")
-
-            logger.info(f"Successfully posted review for submission {submission_number}")
+                # Fall back to posting as Official_Comment, handling chunking if needed
+                await self._post_as_comment_with_chunking(submission_number, signature, comment_content)
+                logger.info(f"Successfully posted comment(s) for submission {submission_number}")
 
         except Exception as e:
-            logger.error(f"Error posting review for submission {submission_number}: {str(e)}")
+            logger.error(f"Error posting comment for submission {submission_number}: {str(e)}")
             raise
 
-    async def async_post_reviews(
+    async def _try_post_as_review(self, submission_number: str, signature: str, comment_content: str) -> None:
+        """
+        Try to post the comment as an Official_Review.
+
+        Args:
+            submission_number: The submission number
+            signature: The signature to use for posting
+            comment_content: The content of the review
+        """
+        review_note = openreview.api.Note(
+            content={
+                "title": {"value": f"Marks for submission {submission_number}"},
+                "review": {"value": comment_content},
+            }
+        )
+
+        self.client.post_note_edit(
+            invitation=f"{self.config.venue_id}/Submission{submission_number}/-/Official_Review",
+            signatures=[signature],
+            note=review_note,
+        )
+
+    async def _post_as_comment_with_chunking(
+        self, submission_number: str, signature: str, comment_content: str
+    ) -> None:
+        """
+        Post the comment as Official_Comment, splitting into chunks if necessary.
+
+        Args:
+            submission_number: The submission number
+            signature: The signature to use for posting
+            comment_content: The content of the comment
+        """
+        max_chars = 5000
+
+        # If content is short enough, post it directly
+        if len(comment_content) <= max_chars:
+            await self._post_comment_chunk(submission_number, signature, comment_content, 1, 1)
+            return
+
+        # Split content into chunks
+        chunks = []
+        for i in range(0, len(comment_content), max_chars):
+            chunks.append(comment_content[i : i + max_chars])
+
+        logger.info(f"Splitting comment into {len(chunks)} chunks for submission {submission_number}")
+
+        # Post each chunk with appropriate headers
+        for i, chunk in enumerate(chunks, 1):
+            await self._post_comment_chunk(submission_number, signature, chunk, i, len(chunks))
+
+    async def _post_comment_chunk(
+        self, submission_number: str, signature: str, content: str, chunk_num: int, total_chunks: int
+    ) -> None:
+        """
+        Post a single chunk of a comment.
+
+        Args:
+            submission_number: The submission number
+            signature: The signature to use for posting
+            content: The content of this chunk
+            chunk_num: The index of this chunk
+            total_chunks: The total number of chunks
+        """
+        title = f"Marks for submission {submission_number}"
+        if total_chunks > 1:
+            title += f" (Part {chunk_num}/{total_chunks})"
+
+        comment_note = openreview.api.Note(
+            content={
+                "title": {"value": title},
+                "comment": {"value": content},
+            }
+        )
+
+        self.client.post_note_edit(
+            invitation=f"{self.config.venue_id}/Submission{submission_number}/-/Official_Comment",
+            signatures=[signature],
+            note=comment_note,
+        )
+
+        if total_chunks > 1:
+            # Add a small delay between chunk postings to avoid rate limits
+            await asyncio.sleep(1)
+
+    async def async_post_comments(
         self,
         student_submissions: list[StudentSubmission],
-        review_contents: dict[str, str],
+        comment_contents: dict[str, str],
     ) -> tuple[list[str], list[str]]:
         """
-        Post reviews for student submissions to OpenReview asynchronously. This is the async version of post_reviews.
+        Post comments for student submissions to OpenReview asynchronously. This is the async version of post_comments.
         """
-        logger.info(f"Posting reviews for {len(student_submissions)} submissions")
+        logger.info(f"Posting comments for {len(student_submissions)} submissions")
         try:
             venue_group = self.client.get_group(self.config.venue_id)
             submission_name = venue_group.get_content_value("submission_name")
@@ -461,67 +556,66 @@ class OpenReviewInteract:
                 raise ValueError("Submission name not found in venue configuration")
 
             # Get all submissions to find their IDs
-            logger.info("Fetching all submissions to map student IDs to submission IDs")
+            logger.info("Fetching all submissions to map submission numbers to submission IDs")
             all_submissions = self.get_submissions()
             submission_map = {}
             for submission in all_submissions:
-                title = submission.content.get("title", "").get("value", "")
-                try:
-                    _, student_id, _ = parse_submission_title(title)
-                    submission_map[student_id] = submission
-                except ValueError:
-                    # Skip submissions with invalid titles
-                    logger.warning(f"Invalid title format for submission: {title}")
-                    continue
+                submission_number = submission.number
+                if submission_number:
+                    submission_map[submission_number] = submission
 
-            successful_reviews = []
-            failed_reviews = []
+            successful_comments = []
+            failed_comments = []
 
             # Create tasks for parallel processing
             tasks = []
             task_metadata = []  # Store metadata to track which task is for which submission
 
             for student_submission in student_submissions:
-                student_id = student_submission.student_id
+                submission_number = student_submission.submission_number
 
-                # Skip if no review content is available for this student
-                if student_id not in review_contents:
-                    logger.warning(f"No review content available for student {student_id}")
-                    failed_reviews.append(student_id)
+                # Skip if no comment content is available for this submission
+                if submission_number not in comment_contents:
+                    logger.warning(f"No comment content available for submission {submission_number}")
+                    failed_comments.append(submission_number)
                     continue
 
                 # Skip if submission not found
-                if student_id not in submission_map:
-                    logger.warning(f"No submission found for student {student_id}")
-                    failed_reviews.append(student_id)
+                if submission_number not in submission_map:
+                    logger.warning(f"No submission found for submission {submission_number}")
+                    failed_comments.append(submission_number)
                     continue
 
-                submission = submission_map[student_id]
+                submission = submission_map[submission_number]
                 # Create task for concurrent processing
-                tasks.append(self.post_single_review(student_submission, submission, review_contents[student_id]))
+                tasks.append(
+                    self.post_single_comment(student_submission, submission, comment_contents[submission_number])
+                )
                 # Store metadata to identify the task result later
-                task_metadata.append((student_id, submission.id))
+                task_metadata.append((submission_number, submission.id))
 
             # Execute all tasks concurrently
             if tasks:
-                logger.info(f"Concurrently posting {len(tasks)} reviews")
+                logger.info(f"Concurrently posting {len(tasks)} comments")
                 results = await asyncio.gather(*tasks, return_exceptions=True)
 
                 # Process results
                 for i, result in enumerate(results):
-                    student_id, submission_id = task_metadata[i]
+                    submission_number, submission_id = task_metadata[i]
                     if isinstance(result, Exception):
                         # An exception occurred during posting
-                        logger.error(f"Failed to post review for student {student_id}: {str(result)}")
-                        failed_reviews.append(student_id)
+                        logger.error(f"Failed to post comment for submission {submission_number}: {str(result)}")
+                        failed_comments.append(submission_number)
                     else:
-                        # Success (post_single_review completed without exception)
-                        successful_reviews.append(submission_id)
-                        logger.info(f"Successfully posted review for student {student_id}, submission {submission_id}")
+                        # Success (post_single_comment completed without exception)
+                        successful_comments.append(submission_id)
+                        logger.info(
+                            f"Successfully posted comment for submission {submission_number}, submission ID {submission_id}"  # noqa: E501
+                        )
 
-            logger.info(f"Posted {len(successful_reviews)} reviews successfully, {len(failed_reviews)} failed")
-            return successful_reviews, failed_reviews
+            logger.info(f"Posted {len(successful_comments)} comments successfully, {len(failed_comments)} failed")
+            return successful_comments, failed_comments
 
         except Exception as e:
-            logger.error(f"Error in async_post_reviews: {str(e)}")
+            logger.error(f"Error in async_post_comments: {str(e)}")
             raise

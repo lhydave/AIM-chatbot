@@ -45,9 +45,14 @@ def parse_arguments() -> argparse.Namespace:
         help="Mark submissions",
     )
     step_group.add_argument(
-        "--post",
+        "--post-llm",
         action="store_true",
-        help="Post marks to OpenReview",
+        help="Post LLM marks to OpenReview",
+    )
+    step_group.add_argument(
+        "--post-human",
+        action="store_true",
+        help="Post human-verified marks to OpenReview",
     )
 
     parser.add_argument(
@@ -82,13 +87,15 @@ async def main() -> None:
         selected_steps.append("process")
     if args.mark:
         selected_steps.append("mark")
-    if args.post:
-        selected_steps.append("post")
+    if args.post_llm:
+        selected_steps.append("post-llm")
+    if args.post_human:
+        selected_steps.append("post-human")
 
     # Require at least one step to be specified
     if not selected_steps:
         print("Error: You must specify at least one step to run.")
-        print("Use one or more of: --download, --reference, --process, --mark, --post")
+        print("Use one or more of: --download, --reference, --process, --mark, --post-llm, --post-human")
         sys.exit(1)
 
     steps = "+".join(selected_steps)

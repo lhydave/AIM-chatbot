@@ -456,6 +456,7 @@ class TestStudentSubmission:
             homework_id="1",
             student_id="2300017001",
             student_name="Test Student",
+            submission_number="1",
             raw_source_code="# Test code",
             code_language="markdown",
         )
@@ -466,6 +467,7 @@ class TestStudentSubmission:
         assert json_dict["homework_id"] == "1"
         assert json_dict["student_id"] == "2300017001"
         assert json_dict["student_name"] == "Test Student"
+        assert json_dict["submission_number"] == "1"
         assert json_dict["raw_source_code"] == "# Test code"
         assert json_dict["code_language"] == "markdown"
         assert "processed_source_code" not in json_dict
@@ -482,6 +484,7 @@ class TestStudentSubmission:
             homework_id="2",
             student_id="2300017002",
             student_name="Another Student",
+            submission_number="2",
             raw_source_code="# More code",
             code_language="tex",
             processed_source_code=answer_group,
@@ -493,6 +496,7 @@ class TestStudentSubmission:
         assert json_dict["homework_id"] == "2"
         assert json_dict["student_id"] == "2300017002"
         assert json_dict["student_name"] == "Another Student"
+        assert json_dict["submission_number"] == "2"
         assert json_dict["raw_source_code"] == "# More code"
         assert json_dict["code_language"] == "tex"
         assert "processed_source_code" in json_dict
@@ -508,6 +512,7 @@ class TestStudentSubmission:
             "homework_id": "3",
             "student_id": "2300017003",
             "student_name": "Third Student",
+            "submission_number": "3",
             "raw_source_code": "function test() {}",
             "code_language": "markdown",
         }
@@ -517,6 +522,7 @@ class TestStudentSubmission:
         assert submission.homework_id == "3"
         assert submission.student_id == "2300017003"
         assert submission.student_name == "Third Student"
+        assert submission.submission_number == "3"
         assert submission.raw_source_code == "function test() {}"
         assert submission.code_language == "markdown"
         assert submission.processed_source_code is None
@@ -528,6 +534,7 @@ class TestStudentSubmission:
             "homework_id": "4",
             "student_id": "2300017004",
             "student_name": "Fourth Student",
+            "submission_number": "4",
             "raw_source_code": "# Python code",
             "code_language": "tex",
             "processed_source_code": {
@@ -548,6 +555,7 @@ class TestStudentSubmission:
         assert submission.homework_id == "4"
         assert submission.student_id == "2300017004"
         assert submission.student_name == "Fourth Student"
+        assert submission.submission_number == "4"
         assert submission.raw_source_code == "# Python code"
         assert submission.code_language == "tex"
         assert submission.processed_source_code is not None

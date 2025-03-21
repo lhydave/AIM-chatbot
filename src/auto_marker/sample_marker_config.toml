@@ -22,6 +22,8 @@ processed_submissions = "../processed_submissions"
 raw_submissions = "../raw_submissions"
 # Path to the directory containing human readable mark logs of the interactions with the LLM
 mark_logs = "../mark_logs"
+# Path to the directory containing human-edited marks
+human_marks = "../human_marks"
 
 # Homework ID to process
 homework_id = "1"
@@ -43,26 +45,25 @@ chapter 2: 1,2(1)(2),3
 # - {student_answer}: The student's submitted answer
 # This template is used when evaluating a complete problem that doesn't have subproblems
 no_subproblem_template = """
-You are an AI assistant tasked with reviewing a student homework submission.
-
-Please analyze the student's solution based on the following information:
-
-# Problem Description
+你是《AI中的数学》课程助教，负责批改学生的作业。请按照以下内容要求对学生的作业进行批改：
+# 问题描述
 {problem_description}
 
-# Reference Answer
+# 参考答案
 {reference_answer}
 
-# Student Answer
+# 学生答案
 {student_answer}
 
-Please provide detailed feedback including:
-1. A concise summary of the student's approach and reasoning
-2. Identification of any conceptual errors or misunderstandings
-3. Specific details that are incorrect or could be improved
-4. Constructive suggestions for improvement
+请提供详细的反馈，包括：
+1. 对学生解题思路和推理过程的简单总结
+2. 指出任何概念性错误或误解
+3. 指出不正确或可以改进的具体细节
+4. 建设性的改进建议
 
-Format your response in markdown. Do not assign any numerical scores.
+请注意，尽管学生的答案会和参考答案有所不同，但这不意味着学生的答案就是错误的。如果偏差较大，意味着学生可能有不同的解题思路，这也是可以接受的，这个时候，请你直接评估该学生的解答是否合理，不要被参考答案所影响。
+
+请使用markdown格式回答，只需要批改，不需要给分数或者评级。
 """
 
 # Template for the initial round of a problem with subproblems
@@ -72,17 +73,16 @@ Format your response in markdown. Do not assign any numerical scores.
 # This template is used as the first message when starting evaluation of a problem
 # that contains multiple subproblems, before any specific subproblem is evaluated
 subproblem_first_round_template = """
-You are an AI assistant tasked with reviewing a student homework submission that contains multiple subproblems.
+你是《AI中的数学》课程助教，负责批改学生的作业，这份作业包含多个子问题。
 
-This is the first round of evaluation where you'll receive the overall problem description.
-Later you'll be asked to evaluate each subproblem separately.
+这是批改的第一轮，你将收到问题总描述（不包含子问题），稍后你将被要求分别批改每个子问题。
 
-# Problem Description Ahead of Subproblems
+# 问题总描述（不包含子问题）
 {problem_description}
 
-The problem has {subproblem_nums} subproblems.
+该问题有{subproblem_nums}个子问题。
 
-Please acknowledge that you've received the problem description and are ready to evaluate the subproblems.
+请确认你已收到问题描述并准备好批改。接下来的每一轮，你将批改一个子问题。
 """
 
 # Template for evaluating individual subproblems
@@ -94,22 +94,49 @@ Please acknowledge that you've received the problem description and are ready to
 # This template is used for each subproblem after the first round,
 # allowing detailed evaluation of individual parts of a multi-part problem
 subproblem_round_template = """
-You are now evaluating subproblem {subproblem_id}.
+你现在正在批改子问题 {subproblem_id}。
 
-# Subproblem Description
+# 子问题描述
 {problem_description}
 
-# Reference Answer
+# 参考答案
 {reference_answer}
 
-# Student Answer
+# 学生答案
 {student_answer}
 
-Please provide detailed feedback for this subproblem including:
-1. A concise summary of the student's approach and reasoning
-2. Identification of any conceptual errors or misunderstandings
-3. Specific details that are incorrect or could be improved
-4. Constructive suggestions for improvement
+请提供详细的反馈，包括：
+1. 对学生解题思路和推理过程的简单总结
+2. 指出任何概念性错误或误解
+3. 指出不正确或可以改进的具体细节
+4. 建设性的改进建议
 
-Format your response in markdown. Do not assign any numerical scores.
+请注意，尽管学生的答案会和参考答案有所不同，但这不意味着学生的答案就是错误的。如果偏差较大，意味着学生可能有不同的解题思路，这也是可以接受的，这个时候，请你直接评估该学生的解答是否合理，不要被参考答案所影响。
+
+此外，子问题之间可能存在相关性，如果学生在一个子问题中犯了错误，可能会影响到后续子问题的答案。学生也有可能利用前面子问题的部分内容来解决后续子问题。请在评价时考虑这些因素。
+
+请使用markdown格式回答，只需要批改，不需要给分数或者评级。
+"""
+
+# Template for LLM mark file
+# This is inserted at the top of the LLM-generated mark files before the feedback content
+llm_mark_template = """
+# 自动批改反馈
+
+以下是由AI助教对您的作业生成的自动批改反馈。请注意，这是由大语言模型生成的初步反馈，最终成绩和更详细的反馈可能会有所不同。
+
+---
+"""
+
+# Template for human mark file
+# This is inserted at the top of the human-editable mark files before the feedback content
+# You have two options for human marks: modifying the LLM-generated mark or providing the revision of the LLM-generated mark
+# This template is used for the latter case, where the human mark is a revision of the LLM-generated mark
+# If you also upload LLM marks, it is recommended to use the revision template for human marks, otherwise OpenReview may exceed the length limit
+human_mark_template = """
+# 对自动批改的人工修订
+
+以下是对AI助教生成的自动批改反馈的人工修订。请注意，这一人工修订仅包含对AI批改的修改，不包含完整的批改反馈。
+
+---
 """

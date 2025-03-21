@@ -1,6 +1,8 @@
 import toml
 import asyncio
 import json
+import shutil
+import re
 from typing import Any
 from pathlib import Path
 from dataclasses import dataclass
@@ -76,16 +78,28 @@ class MarkerConfig:
                 "Prompts configuration incomplete. Required fields: no_subproblem_template, subproblem_first_round_template, subproblem_round_template"  # noqa: E501
             )
 
+        # check mark templates
+        required_comment_fields = [
+            self.prompts.get("llm_mark_template"),
+            self.prompts.get("human_mark_template"),
+        ]
+
+        if not all(required_comment_fields):
+            raise ValueError(
+                "Prompts configuration incomplete. Required fields: llm_mark_template, human_mark_template"
+            )
+
         # Check paths
         required_paths = [
             self.paths.get("reference_materials"),
             self.paths.get("processed_submissions"),
             self.paths.get("raw_submissions"),
+            self.paths.get("human_marks"),
             self.paths.get("mark_logs"),  # for debugging
         ]
         if not all(required_paths):
             raise ValueError(
-                "Path configuration incomplete. Required paths: reference_materials, processed_submissions, raw_submissions, marks_logs"  # noqa: E501
+                "Path configuration incomplete. Required paths: reference_materials, processed_submissions, raw_submissions, human_marks, mark_logs"  # noqa: E501
             )
 
         # Check homework ID
@@ -127,6 +141,7 @@ class Marker:
         )
         self.raw_submissions_path = Path(self.config.paths["raw_submissions"]) / f"HW{self.config.homework_id}"
         self.mark_logs_path = Path(self.config.paths["mark_logs"]) / f"HW{self.config.homework_id}"
+        self.human_marks_path = Path(self.config.paths["human_marks"]) / f"HW{self.config.homework_id}"
 
         # Create log directory
         self.log_dir = Path("../log")
@@ -137,6 +152,7 @@ class Marker:
         self.processed_submissions_path.mkdir(parents=True, exist_ok=True)
         self.raw_submissions_path.mkdir(parents=True, exist_ok=True)
         self.mark_logs_path.mkdir(parents=True, exist_ok=True)
+        self.human_marks_path.mkdir(parents=True, exist_ok=True)
 
         # Set up problem list
         self.problem_list = parse_problem_list(self.config.problem_list)
@@ -263,10 +279,34 @@ class Marker:
         logger.info(f"Saving source code to {self.processed_submissions_path}")
 
         for submission in submissions:
-            self.processed_submissions[submission.student_id] = submission
-            source = self.processed_submissions_path / f"{submission.student_id}-{submission.student_name}.json"
+            self.processed_submissions[submission.submission_number] = submission
+            source = (
+                self.processed_submissions_path
+                / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}.json"
+            )
             with open(source, "w", encoding="utf-8") as f:
                 json.dump(submission.to_json(), f, ensure_ascii=False, indent=2)
+
+            # Copy PDF to human_marks directory for manual review
+            pdf_source = (
+                Path(self.config.paths["raw_submissions"])
+                / f"HW{self.config.homework_id}"
+                / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}"
+                / "Submission-PDF.pdf"
+            )
+
+            if pdf_source.exists():
+                pdf_dest = (
+                    self.human_marks_path
+                    / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}.pdf"
+                )
+                try:
+                    shutil.copy2(pdf_source, pdf_dest)
+                    logger.info(f"Copied PDF for submission {submission.submission_number} to human marks directory")
+                except Exception as e:
+                    logger.error(f"Failed to copy PDF for submission {submission.submission_number}: {e}")
+            else:
+                logger.warning(f"PDF file for submission {submission.submission_number} not found at {pdf_source}")
 
     def load_submissions_from_files(self) -> None:
         """
@@ -284,7 +324,7 @@ class Marker:
                 with open(file_path, encoding="utf-8") as f:
                     submission_data = json.load(f)
                     submission = StudentSubmission.from_json(submission_data)
-                    self.processed_submissions[submission.student_id] = submission
+                    self.processed_submissions[submission.submission_number] = submission
             except Exception as e:
                 logger.error(f"Error loading submission from {file_path}: {e}")
 
@@ -304,7 +344,9 @@ class Marker:
         """
         # Parse the submission content
 
-        logger.info(f"Parsing submission {submission.student_id}-{submission.student_name}...")
+        logger.info(
+            f"Parsing submission {submission.submission_number}-{submission.student_id}-{submission.student_name}..."
+        )
         parsed_content = parse_content_with_filter(
             submission.raw_source_code, submission.code_language, self.problem_list
         )
@@ -329,8 +371,8 @@ class Marker:
 
         logger.info("Parsing all submissions...")
 
-        for student_id, submission in self.processed_submissions.items():
-            self.processed_submissions[student_id] = self.parse_submission(submission)
+        for submission_number, submission in self.processed_submissions.items():
+            self.processed_submissions[submission_number] = self.parse_submission(submission)
 
         logger.info("All submissions parsed.")
 
@@ -347,7 +389,9 @@ class Marker:
         Returns:
             The Answer object containing the mark
         """
-        logger.info(f"Marking problem {problem_id} for submission {submission.student_id}-{submission.student_name}...")
+        logger.info(
+            f"Marking problem {problem_id} for submission {submission.submission_number}-{submission.student_id}-{submission.student_name}..."  # noqa: E501
+        )
 
         # Get problem description and reference answer for this problem
         problem_description = self.problem_descriptions.get(problem_id, Answer("No problem description available"))
@@ -355,13 +399,13 @@ class Marker:
 
         # Get student's answer for this problem (or provide default)
         if not submission.processed_source_code:
-            logger.warning(f"No processed source code found for student {submission.student_id}")
+            logger.warning(f"No processed source code found for submission {submission.submission_number}")
             student_answer = Answer("No answer provided")
         else:
             student_answer = submission.processed_source_code.get(problem_id, Answer("No answer provided"))
 
         # Generate log file path
-        log_file = self.mark_logs_path / f"{submission.student_id}_{problem_id}.txt"
+        log_file = self.mark_logs_path / f"submission{submission.submission_number}_{problem_id}.txt"
 
         try:
             # Use LLM interactor to mark the problem
@@ -373,11 +417,11 @@ class Marker:
                 logging_path=str(log_file),
             )
 
-            logger.info(f"Successfully marked problem {problem_id} for student {submission.student_id}")
+            logger.info(f"Successfully marked problem {problem_id} for submission {submission.submission_number}")
             return mark_result
 
         except Exception as e:
-            logger.error(f"Error marking problem {problem_id} for student {submission.student_id}: {e}")
+            logger.error(f"Error marking problem {problem_id} for submission {submission.submission_number}: {e}")
             # Return a default answer indicating the error
             error_answer = Answer(answer=f"Error during marking: {str(e)}")
             return error_answer
@@ -399,7 +443,9 @@ class Marker:
         Returns:
             The updated StudentSubmission object with marks
         """
-        logger.info(f"Marking submission {submission.student_id}-{submission.student_name}...")
+        logger.info(
+            f"Marking submission {submission.submission_number}-{submission.student_id}-{submission.student_name}..."
+        )
 
         # Initialize an AnswerGroup to store marks
         marks = AnswerGroup()
@@ -422,17 +468,37 @@ class Marker:
         submission.marks = marks
 
         # Save the updated submission to the JSON file
-        submission_file = self.processed_submissions_path / f"{submission.student_id}-{submission.student_name}.json"
+        submission_file = (
+            self.processed_submissions_path
+            / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}.json"
+        )
         with open(submission_file, "w", encoding="utf-8") as f:
             json.dump(submission.to_json(), f, ensure_ascii=False, indent=2)
 
         # Save the marks to a Markdown-formatted file
-        mark_file = self.processed_submissions_path / f"{submission.student_id}-{submission.student_name}-marks.md"
+        mark_file = (
+            self.processed_submissions_path
+            / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}-llm_marks.md"
+        )
         with open(mark_file, "w", encoding="utf-8") as f:
-            f.write(marks.to_markdown_str())
+            f.write(self.config.prompts["llm_mark_template"] + "\n\n" + marks.to_markdown_str())
+
+        # Copy to human_marks directory for manual editing
+        human_mark_file = (
+            self.human_marks_path
+            / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}-human_marks.md"  # noqa: E501
+        )
+        try:
+            with open(human_mark_file, "w", encoding="utf-8") as f:
+                f.write(self.config.prompts["human_mark_template"] + "\n\n" + marks.to_markdown_str())
+            logger.info(
+                f"Copied marks for submission {submission.submission_number} to human marks directory for editing"
+            )
+        except Exception as e:
+            logger.error(f"Failed to copy marks for submission {submission.submission_number}: {e}")
 
         logger.info(
-            f"Successfully marked all problems for submission {submission.student_id}-{submission.student_name}"
+            f"Successfully marked all problems for submission {submission.submission_number}-{submission.student_id}-{submission.student_name}"  # noqa: E501
         )
         return submission
 
@@ -467,7 +533,7 @@ class Marker:
 
         # Create tasks for each submission
         mark_tasks = []
-        for student_id, submission in self.processed_submissions.items():
+        for submission_number, submission in self.processed_submissions.items():
             mark_tasks.append(self.mark_submission(submission))
 
         # Execute all tasks in parallel
@@ -489,14 +555,14 @@ class Marker:
 
         logger.info("Marking process completed.")
 
-    def post_all_marks(self) -> None:
+    def post_llm_marks(self) -> None:
         """
-        Post all marks to OpenReview.
+        Post LLM-generated marks to OpenReview.
 
         This method will:
-        1. Convert the marks for each submission to a markdown-formatted review
-        2. Submit the reviews to OpenReview using the OpenReview client
-        3. Report on successful and failed review postings
+        1. Convert the marks for each submission to a markdown-formatted comment
+        2. Submit the comments to OpenReview using the OpenReview client
+        3. Report on successful and failed comment postings
         """
         # Check if submissions have been downloaded, parsed, and marked
         if not self._check_raw_submissions_exist():
@@ -509,57 +575,143 @@ class Marker:
         if not self._check_submissions_marked():
             raise ValueError("No marks available. Please mark submissions first using mark_all_submissions().")
 
-        logger.info("Posting all marks to OpenReview...")
+        logger.info("Posting LLM marks to OpenReview...")
 
-        # Create a dictionary to map student IDs to their review content
-        review_contents = {}
+        # Create a dictionary to map submission numbers to their comment content
+        comment_contents = {}
 
         # Prepare all submissions with marks for posting
         valid_submissions = []
 
-        for student_id, submission in self.processed_submissions.items():
+        for submission_number, submission in self.processed_submissions.items():
             # Skip submissions without marks
             if not submission.marks or len(submission.marks) == 0:
-                logger.warning(f"No marks found for student {student_id}, skipping...")
+                logger.warning(f"No marks found for submission {submission_number}, skipping...")
                 continue
 
-            # Convert marks to markdown format for the review
+            # Convert marks to markdown format for the comment
             mark_content = submission.marks.to_markdown_str()
-            review_contents[student_id] = mark_content
+            comment_contents[submission.submission_number] = mark_content
             valid_submissions.append(submission)
 
         if not valid_submissions:
             logger.warning("No valid submissions with marks found. Nothing to post.")
             return
 
-        logger.info(f"Sending {len(valid_submissions)} reviews to OpenReview...")
+        logger.info(f"Sending {len(valid_submissions)} LLM comment(s) to OpenReview...")
 
-        # Post the reviews using the OpenReview client
+        # Post the comments using the OpenReview client
         try:
-            successful_reviews, failed_reviews = self.openreview_client.post_reviews(
-                student_submissions=valid_submissions, review_contents=review_contents
+            successful_comments, failed_comments = self.openreview_client.post_comments(
+                student_submissions=valid_submissions, comment_contents=comment_contents
             )
 
             # Report on results
-            if successful_reviews:
-                logger.info(f"Successfully posted {len(successful_reviews)} reviews.")
+            if successful_comments:
+                logger.info(f"Successfully posted {len(successful_comments)} LLM comments.")
 
-            if failed_reviews:
-                logger.warning(f"Failed to post reviews for {len(failed_reviews)} students:")
-                for student_id in failed_reviews:
-                    logger.warning(f"  - {student_id}")
+            if failed_comments:
+                logger.warning(f"Failed to post LLM comments for {len(failed_comments)} submissions:")
+                for submission_number in failed_comments:
+                    logger.warning(f"  - {submission_number}")
 
         except Exception as e:
-            logger.error(f"Error posting reviews to OpenReview: {e}")
+            logger.error(f"Error posting LLM comments to OpenReview: {e}")
 
-        logger.info("Mark posting process completed.")
+        logger.info("LLM mark posting process completed.")
 
-    async def run(self, steps: str = "all", log_level: str = "INFO") -> None:
+    def post_human_marks(self) -> None:
+        """
+        Post human-verified marks to OpenReview.
+
+        This method will:
+        1. Read the human-edited mark files from the human_marks directory
+        2. Submit the comments to OpenReview using the OpenReview client
+        3. Report on successful and failed comment postings
+        """
+        logger.info("Posting human-verified marks to OpenReview...")
+
+        # Check if human marks directory exists
+        if not self.human_marks_path.exists():
+            raise ValueError(f"Human marks directory {self.human_marks_path} does not exist.")
+
+        # Find all human mark files
+        human_mark_files = list(self.human_marks_path.glob("*-human_marks.md"))
+
+        if not human_mark_files:
+            logger.warning("No human mark files found. Nothing to post.")
+            return
+
+        # Create lists to track valid submissions and their content
+        valid_submissions = []
+        comment_contents = {}
+
+        # Load all submissions if they haven't been loaded yet
+        if not self._check_raw_submissions_exist():
+            self.load_submissions_from_files()
+
+        # Process each human mark file
+        for mark_file in human_mark_files:
+            # Extract submission info from filename
+            filename = mark_file.name
+            match = re.match(r"submission(\d+)-(\d+)-([\s\S]+)-human_marks\.md", filename)
+
+            if not match:
+                logger.warning(f"Invalid human mark filename format: {filename}, skipping...")
+                continue
+
+            submission_number, student_id, student_name = match.groups()
+
+            # Check if we have this submission
+            if submission_number not in self.processed_submissions:
+                logger.warning(f"No submission record found for submission {submission_number}, skipping...")
+                continue
+
+            # Read the human mark content
+            try:
+                with open(mark_file, encoding="utf-8") as f:
+                    mark_content = f.read()
+
+                # Store the content for posting
+                comment_contents[submission_number] = mark_content
+                valid_submissions.append(self.processed_submissions[submission_number])
+
+            except Exception as e:
+                logger.error(f"Error reading human mark file for submission {submission_number}: {e}")
+                continue
+
+        if not valid_submissions:
+            logger.warning("No valid human marks found. Nothing to post.")
+            return
+
+        logger.info(f"Sending {len(valid_submissions)} human-verified comment(s) to OpenReview...")
+
+        # Post the comments using the OpenReview client
+        try:
+            successful_comments, failed_comments = self.openreview_client.post_comments(
+                student_submissions=valid_submissions, comment_contents=comment_contents
+            )
+
+            # Report on results
+            if successful_comments:
+                logger.info(f"Successfully posted {len(successful_comments)} human-verified comments.")
+
+            if failed_comments:
+                logger.warning(f"Failed to post human-verified comments for {len(failed_comments)} submissions:")
+                for submission_number in failed_comments:
+                    logger.warning(f"  - {submission_number}")
+
+        except Exception as e:
+            logger.error(f"Error posting human-verified comments to OpenReview: {e}")
+
+        logger.info("Human mark posting process completed.")
+
+    async def run(self, steps: str, log_level: str = "INFO") -> None:
         """
         Run the marking workflow with configurable steps.
 
         Each step will use a separate log file, and steps will only run based on the specified parameter.
-        The workflow follows a logical progression: download -> load_references -> process -> mark -> post.
+        The workflow follows a logical progression: download -> load_references -> process -> mark -> post-llm -> post-human.
 
         Args:
             steps: Which steps to run, can be:
@@ -568,10 +720,11 @@ class Marker:
                   - "reference": Load reference materials only
                   - "process": Process submissions only
                   - "mark": Mark submissions only
-                  - "post": Post marks only
+                  - "post-llm": Post LLM marks only
+                  - "post-human": Post human-verified marks only
                   - Or any combination with "+" (e.g., "download+process+mark")
             log_level: Logging level for all steps ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-        """
+        """  # noqa: E501
         hw_id = self.config.homework_id
         steps = steps.lower().strip()
 
@@ -587,7 +740,8 @@ class Marker:
         run_reference = run_all or "reference" in steps
         run_process = run_all or "process" in steps
         run_mark = run_all or "mark" in steps
-        run_post = run_all or "post" in steps
+        run_post_llm = run_all or "post-llm" in steps
+        run_post_human = run_all or "post-human" in steps
 
         # Download submissions
         if run_download:
@@ -621,13 +775,21 @@ class Marker:
             await self.mark_all_submissions()
             logger.info("Marking step completed")
 
-        # Post marks to OpenReview
-        if run_post:
-            log_file = self.log_dir / f"marker_hw{hw_id}_post.log"
+        # Post LLM marks to OpenReview
+        if run_post_llm:
+            log_file = self.log_dir / f"marker_hw{hw_id}_post_llm.log"
             configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
-            logger.info(f"Starting posting step for homework {hw_id}")
-            self.post_all_marks()
-            logger.info("Posting step completed")
+            logger.info(f"Starting posting LLM marks step for homework {hw_id}")
+            self.post_llm_marks()
+            logger.info("Posting LLM marks step completed")
+
+        # Post human marks to OpenReview
+        if run_post_human:
+            log_file = self.log_dir / f"marker_hw{hw_id}_post_human.log"
+            configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
+            logger.info(f"Starting posting human marks step for homework {hw_id}")
+            self.post_human_marks()
+            logger.info("Posting human marks step completed")
 
         # Reset logger to default
         configure_global_logger(level=log_level, log_file=f"marker_hw{hw_id}_init.log")

@@ -1,3 +1,14 @@
+# Homework ID to process
+homework_id = "1"
+
+# Problem list configuration
+# The format follows "chapter X: problem1,problem2,problem3(subproblem1)(subproblem2),..."
+# Each line represents problems for a chapter
+problem_list = """
+chapter 1: 1,2,3
+chapter 2: 1,2(1)(2),3
+"""
+
 # OpenReview configuration
 [openreview]
 username = "your_email@example.com"
@@ -6,7 +17,7 @@ venue_id = "PKU.edu/2025/Spring/AIM"
 
 # LLM configuration
 [llm]
-base_url = "https://api.openai.com/v1"
+base_url = "https://base/url/to/llm"
 api_key = "your_openai_api_key"
 model = "gpt-4-turbo"
 temperature = 0.5
@@ -24,17 +35,6 @@ raw_submissions = "../raw_submissions"
 mark_logs = "../mark_logs"
 # Path to the directory containing human-edited marks
 human_marks = "../human_marks"
-
-# Homework ID to process
-homework_id = "1"
-
-# Problem list configuration
-# The format follows "chapter X: problem1,problem2,problem3(subproblem1)(subproblem2),..."
-# Each line represents problems for a chapter
-problem_list = """
-chapter 1: 1,2,3
-chapter 2: 1,2(1)(2),3
-"""
 
 # Marking prompt templates
 [prompts]

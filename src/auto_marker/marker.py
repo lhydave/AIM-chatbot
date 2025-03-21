@@ -1,4 +1,4 @@
-import toml
+import tomllib  # Changed from toml to tomllib (Python 3.11+)
 import asyncio
 import json
 import shutil
@@ -41,8 +41,9 @@ class MarkerConfig:
     def from_toml(cls, toml_path: str) -> "MarkerConfig":
         """Load configuration from a TOML file."""
         try:
-            with open(toml_path, encoding="utf-8") as f:
-                config_dict = toml.load(f)
+            with open(toml_path, "rb") as f:  # Changed to binary mode as required by tomllib
+                config_dict = tomllib.load(f)  # Changed from toml.load to tomllib.load
+                # The remaining sections are dictionaries
                 return cls(**config_dict)
         except Exception as e:
             raise ValueError(f"Failed to load configuration from {toml_path}: {str(e)}")
@@ -129,8 +130,11 @@ class Marker:
         self.config.validate()
 
         # Configure the global logger
-        log_file = f"marker_hw{self.config.homework_id}_init.log"
-        configure_global_logger(level=logging.INFO, log_file=log_file)
+        self.log_dir = Path("../log")  # Create log directory first
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+
+        log_file = self.log_dir / f"marker_hw{self.config.homework_id}_init.log"
+        configure_global_logger(level=logging.INFO, log_file=str(log_file))
 
         logger.info(f"Initializing Marker with homework ID: {self.config.homework_id}")
 
@@ -142,10 +146,6 @@ class Marker:
         self.raw_submissions_path = Path(self.config.paths["raw_submissions"]) / f"HW{self.config.homework_id}"
         self.mark_logs_path = Path(self.config.paths["mark_logs"]) / f"HW{self.config.homework_id}"
         self.human_marks_path = Path(self.config.paths["human_marks"]) / f"HW{self.config.homework_id}"
-
-        # Create log directory
-        self.log_dir = Path("../log")
-        self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # Create directories if they don't exist
         self.reference_materials_path.mkdir(parents=True, exist_ok=True)
@@ -259,14 +259,14 @@ class Marker:
 
         logger.info("Reference materials loaded.")
 
-    def download_submissions(self) -> None:
+    async def download_submissions(self) -> None:
         """
         Download student submissions from OpenReview for the configured homework ID.
         """
         logger.info(f"Downloading submissions for homework: {self.config.homework_id} to {self.raw_submissions_path}")
 
         # Use OpenReview client to fetch submissions
-        submissions, failed_submissions = self.openreview_client.process_all_submissions(self.config.homework_id)
+        submissions, failed_submissions = await self.openreview_client.process_all_submissions(self.config.homework_id)
 
         if failed_submissions:
             logger.warning(f"Failed to process {len(failed_submissions)} submissions:")
@@ -289,8 +289,7 @@ class Marker:
 
             # Copy PDF to human_marks directory for manual review
             pdf_source = (
-                Path(self.config.paths["raw_submissions"])
-                / f"HW{self.config.homework_id}"
+                self.raw_submissions_path
                 / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}"
                 / "Submission-PDF.pdf"
             )
@@ -555,7 +554,7 @@ class Marker:
 
         logger.info("Marking process completed.")
 
-    def post_llm_marks(self) -> None:
+    async def post_llm_marks(self) -> None:
         """
         Post LLM-generated marks to OpenReview.
 
@@ -602,7 +601,7 @@ class Marker:
 
         # Post the comments using the OpenReview client
         try:
-            successful_comments, failed_comments = self.openreview_client.post_comments(
+            successful_comments, failed_comments = await self.openreview_client.post_comments(
                 student_submissions=valid_submissions, comment_contents=comment_contents
             )
 
@@ -620,7 +619,7 @@ class Marker:
 
         logger.info("LLM mark posting process completed.")
 
-    def post_human_marks(self) -> None:
+    async def post_human_marks(self) -> None:
         """
         Post human-verified marks to OpenReview.
 
@@ -688,7 +687,7 @@ class Marker:
 
         # Post the comments using the OpenReview client
         try:
-            successful_comments, failed_comments = self.openreview_client.post_comments(
+            successful_comments, failed_comments = await self.openreview_client.post_comments(
                 student_submissions=valid_submissions, comment_contents=comment_contents
             )
 
@@ -748,7 +747,7 @@ class Marker:
             log_file = self.log_dir / f"marker_hw{hw_id}_download.log"
             configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
             logger.info(f"Starting download step for homework {hw_id}")
-            self.download_submissions()
+            await self.download_submissions()
             logger.info("Download step completed")
 
         # Load reference materials
@@ -780,7 +779,7 @@ class Marker:
             log_file = self.log_dir / f"marker_hw{hw_id}_post_llm.log"
             configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
             logger.info(f"Starting posting LLM marks step for homework {hw_id}")
-            self.post_llm_marks()
+            await self.post_llm_marks()
             logger.info("Posting LLM marks step completed")
 
         # Post human marks to OpenReview
@@ -788,9 +787,10 @@ class Marker:
             log_file = self.log_dir / f"marker_hw{hw_id}_post_human.log"
             configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
             logger.info(f"Starting posting human marks step for homework {hw_id}")
-            self.post_human_marks()
+            await self.post_human_marks()
             logger.info("Posting human marks step completed")
 
         # Reset logger to default
-        configure_global_logger(level=log_level, log_file=f"marker_hw{hw_id}_init.log")
+        log_file = self.log_dir / f"marker_hw{hw_id}_init.log"
+        configure_global_logger(level=log_level, log_file=str(log_file), mode="w")
         logger.info(f"Completed requested workflow steps for homework {hw_id}")

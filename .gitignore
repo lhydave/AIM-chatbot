@@ -12,3 +12,9 @@ my_marker_config.toml
 .DS_store
 requirement.txt
 .vscode/
+human_marks/
+log/
+mark_logs/
+processed_submissions/
+raw_submissions/
+reference_materials/

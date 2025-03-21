@@ -30,7 +30,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 - `--config` 或 `-c`: 可选，配置文件路径（默认：`./auto_marker/my_marker_config.toml`）
 - 工作流步骤选项（可单独或组合使用）：
-  - `--download`: 从 OpenReview 下载提交
+  - `--download`: 从 OpenReview 下载提交，如果已经下载过，则不会重复下载，而是会把内容加载到系统中
   - `--reference`: 加载参考资料（标准答案和问题描述）
   - `--process`: 处理提交
   - `--mark`: 批改提交

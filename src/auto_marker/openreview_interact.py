@@ -111,7 +111,7 @@ def extract_zip_file(zip_path: str, target_path: str) -> None:
 
 
 def process_source_code(
-    source_binary: bytes, title: str, submission_dir: str
+    source_binary: bytes, title: str, submission_dir: str, downloaded: bool
 ) -> tuple[str, Literal["markdown", "tex"]]:
     """
     Extract and process source code files from a submission.
@@ -120,6 +120,7 @@ def process_source_code(
         source_binary: Binary content of the source code (zip file)
         title: The submission title
         submission_dir: Directory to save and extract source files
+        downloaded: Whether the source code was already downloaded
 
     Returns:
         raw_source_code: The raw content of the first .tex or .md file found
@@ -132,8 +133,12 @@ def process_source_code(
         with open(zip_path, "wb") as f:
             f.write(source_binary)
 
-        # Extract the zip file using the dedicated function
-        extract_zip_file(zip_path, submission_dir)
+        if not downloaded:
+            logger.info(f"It is the first time downloading source code for submission {title}, extracting")
+            # Extract the zip file using the dedicated function
+            extract_zip_file(zip_path, submission_dir)
+        else:
+            logger.info(f"Source code for submission {title} already extracted, skipping extraction")
 
         logger.info(f"Extracted source code files for submission {title}")
 
@@ -203,7 +208,7 @@ def process_source_code(
 
         # Log a message if we're ignoring additional files
         if len(tex_md_files) > 1:
-            logger.info(f"Multiple source files found for {title}, using only {filename}")
+            logger.warning(f"Multiple source files found for {title}, using only {filename}")
     else:
         logger.warning(f"No valid source files (.tex or .md) found for submission {title}")
 
@@ -242,7 +247,7 @@ class OpenReviewInteract:
             logger.error(f"Error fetching submissions: {str(e)}")
             raise
 
-    def process_all_submissions(self, homework_id: str) -> tuple[list[StudentSubmission], list[str]]:
+    async def process_all_submissions(self, homework_id: str) -> tuple[list[StudentSubmission], list[str]]:
         """
         Process all submissions:
         1. Parse title to extract homework ID, student ID and name
@@ -254,13 +259,6 @@ class OpenReviewInteract:
             Tuple containing:
             - List of successfully processed student submissions
             - List of titles of submissions that failed to process
-        """
-        ret = asyncio.run(self.async_process_all_submissions(homework_id))
-        return ret
-
-    async def async_process_all_submissions(self, homework_id: str) -> tuple[list[StudentSubmission], list[str]]:
-        """
-        Process all submissions asynchronously. This is the async version of process_all_submissions.
         """
         logger.info(f"Processing submissions for homework ID: {homework_id}")
         submissions = self.get_submissions()
@@ -299,8 +297,6 @@ class OpenReviewInteract:
             if isinstance(result, Exception):
                 # If an exception occurred during processing
                 logger.error(f"Error processing submission: {str(result)}")
-            # Note: We can't easily map back to the title here
-            # Consider adding a wrapper function that preserves the title
             else:
                 valid_submissions.append(result)
 
@@ -335,10 +331,9 @@ class OpenReviewInteract:
             f"Parsed title successfully: Homework ID: {homework_id}, Student ID: {student_id}, Student Name: {student_name}"  # noqa: E501
         )
 
-        # Create directory structure: submission_store_path/HWxxx/submission[submission_number]-学号-姓名/
+        # Create directory structure: submission_store_path/submission[submission_number]-学号-姓名/
         submission_dir = os.path.join(
             self.config.submission_store_path,
-            f"HW{homework_id}",
             f"submission{submission_number}-{student_id}-{student_name}",
         )
         os.makedirs(submission_dir, exist_ok=True)
@@ -349,11 +344,23 @@ class OpenReviewInteract:
             logger.error(f"Submission ID not found for submission {title}")
             raise ValueError(f"Submission ID not found for submission {title}")
 
-        # Download PDF
+        downloaded = False
+        if os.path.exists(os.path.join(submission_dir, "Submission-PDF.pdf")) and os.path.exists(
+            os.path.join(submission_dir, "source_code.zip")
+        ):
+            logger.info(f"Submission {submission_number} already downloaded")
+            downloaded = True
+
+        # Download PDF if it is not downloaded yet
+
         pdf_binary = None
         try:
             logger.info(f"Downloading PDF for submission {submission_number}")
-            pdf_binary = self.client.get_attachment("pdf", submission_id)
+            if not downloaded:
+                pdf_binary = self.client.get_attachment("pdf", submission_id)
+            else:
+                with open(os.path.join(submission_dir, "Submission-PDF.pdf"), "rb") as f:
+                    pdf_binary = f.read()
             save_and_process_pdf(pdf_binary, title, submission_dir)
             logger.info(f"Successfully downloaded PDF for submission {submission_number}")
         except Exception as e:
@@ -365,8 +372,12 @@ class OpenReviewInteract:
         code_language: Literal["markdown", "tex"] = "markdown"
         try:
             logger.info(f"Downloading source code for submission {submission_number}")
-            source_binary = self.client.get_attachment("source_code", submission_id)
-            raw_source_code, code_language = process_source_code(source_binary, title, submission_dir)
+            if not downloaded:
+                source_binary = self.client.get_attachment("source_code", submission_id)
+            else:
+                with open(os.path.join(submission_dir, "source_code.zip"), "rb") as f:
+                    source_binary = f.read()
+            raw_source_code, code_language = process_source_code(source_binary, title, submission_dir, downloaded)
             logger.info(f"Successfully processed source code for submission {submission_number}")
         except Exception as e:
             logger.warning(f"Could not download source files for submission {submission_number}: {str(e)}")
@@ -382,7 +393,7 @@ class OpenReviewInteract:
             processed_source_code=None,
         )
 
-    def post_comments(
+    async def post_comments(
         self,
         student_submissions: list[StudentSubmission],
         comment_contents: dict[str, str],
@@ -399,8 +410,79 @@ class OpenReviewInteract:
             - List of successfully posted comment submission IDs
             - List of submission numbers for which comment posting failed
         """
-        ret = asyncio.run(self.async_post_comments(student_submissions, comment_contents))
-        return ret
+        logger.info(f"Posting comments for {len(student_submissions)} submissions")
+        try:
+            venue_group = self.client.get_group(self.config.venue_id)
+            submission_name = venue_group.get_content_value("submission_name")
+
+            if not submission_name:
+                logger.error("Submission name not found in venue configuration")
+                raise ValueError("Submission name not found in venue configuration")
+
+            # Get all submissions to find their IDs
+            logger.info("Fetching all submissions to map submission numbers to submission IDs")
+            all_submissions = self.get_submissions()
+            submission_map = {}
+            for submission in all_submissions:
+                submission_number = submission.number
+                if submission_number:
+                    submission_map[submission_number] = submission
+
+            successful_comments = []
+            failed_comments = []
+
+            # Create tasks for parallel processing
+            tasks = []
+            task_metadata = []  # Store metadata to track which task is for which submission
+
+            for student_submission in student_submissions:
+                submission_number = student_submission.submission_number
+
+                # Skip if no comment content is available for this submission
+                if submission_number not in comment_contents:
+                    logger.warning(f"No comment content available for submission {submission_number}")
+                    failed_comments.append(submission_number)
+                    continue
+
+                # Skip if submission not found
+                if submission_number not in submission_map:
+                    logger.warning(f"No submission found for submission {submission_number}")
+                    failed_comments.append(submission_number)
+                    continue
+
+                submission = submission_map[submission_number]
+                # Create task for concurrent processing
+                tasks.append(
+                    self.post_single_comment(student_submission, submission, comment_contents[submission_number])
+                )
+                # Store metadata to identify the task result later
+                task_metadata.append((submission_number, submission.id))
+
+            # Execute all tasks concurrently
+            if tasks:
+                logger.info(f"Concurrently posting {len(tasks)} comments")
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Process results
+                for i, result in enumerate(results):
+                    submission_number, submission_id = task_metadata[i]
+                    if isinstance(result, Exception):
+                        # An exception occurred during posting
+                        logger.error(f"Failed to post comment for submission {submission_number}: {str(result)}")
+                        failed_comments.append(submission_number)
+                    else:
+                        # Success (post_single_comment completed without exception)
+                        successful_comments.append(submission_id)
+                        logger.info(
+                            f"Successfully posted comment for submission {submission_number}, submission ID {submission_id}"  # noqa: E501
+                        )
+
+            logger.info(f"Posted {len(successful_comments)} comments successfully, {len(failed_comments)} failed")
+            return successful_comments, failed_comments
+
+        except Exception as e:
+            logger.error(f"Error in post_comments: {str(e)}")
+            raise
 
     async def post_single_comment(
         self, student_submission: StudentSubmission, submission: Note, comment_content: str
@@ -537,85 +619,3 @@ class OpenReviewInteract:
         if total_chunks > 1:
             # Add a small delay between chunk postings to avoid rate limits
             await asyncio.sleep(1)
-
-    async def async_post_comments(
-        self,
-        student_submissions: list[StudentSubmission],
-        comment_contents: dict[str, str],
-    ) -> tuple[list[str], list[str]]:
-        """
-        Post comments for student submissions to OpenReview asynchronously. This is the async version of post_comments.
-        """
-        logger.info(f"Posting comments for {len(student_submissions)} submissions")
-        try:
-            venue_group = self.client.get_group(self.config.venue_id)
-            submission_name = venue_group.get_content_value("submission_name")
-
-            if not submission_name:
-                logger.error("Submission name not found in venue configuration")
-                raise ValueError("Submission name not found in venue configuration")
-
-            # Get all submissions to find their IDs
-            logger.info("Fetching all submissions to map submission numbers to submission IDs")
-            all_submissions = self.get_submissions()
-            submission_map = {}
-            for submission in all_submissions:
-                submission_number = submission.number
-                if submission_number:
-                    submission_map[submission_number] = submission
-
-            successful_comments = []
-            failed_comments = []
-
-            # Create tasks for parallel processing
-            tasks = []
-            task_metadata = []  # Store metadata to track which task is for which submission
-
-            for student_submission in student_submissions:
-                submission_number = student_submission.submission_number
-
-                # Skip if no comment content is available for this submission
-                if submission_number not in comment_contents:
-                    logger.warning(f"No comment content available for submission {submission_number}")
-                    failed_comments.append(submission_number)
-                    continue
-
-                # Skip if submission not found
-                if submission_number not in submission_map:
-                    logger.warning(f"No submission found for submission {submission_number}")
-                    failed_comments.append(submission_number)
-                    continue
-
-                submission = submission_map[submission_number]
-                # Create task for concurrent processing
-                tasks.append(
-                    self.post_single_comment(student_submission, submission, comment_contents[submission_number])
-                )
-                # Store metadata to identify the task result later
-                task_metadata.append((submission_number, submission.id))
-
-            # Execute all tasks concurrently
-            if tasks:
-                logger.info(f"Concurrently posting {len(tasks)} comments")
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-
-                # Process results
-                for i, result in enumerate(results):
-                    submission_number, submission_id = task_metadata[i]
-                    if isinstance(result, Exception):
-                        # An exception occurred during posting
-                        logger.error(f"Failed to post comment for submission {submission_number}: {str(result)}")
-                        failed_comments.append(submission_number)
-                    else:
-                        # Success (post_single_comment completed without exception)
-                        successful_comments.append(submission_id)
-                        logger.info(
-                            f"Successfully posted comment for submission {submission_number}, submission ID {submission_id}"  # noqa: E501
-                        )
-
-            logger.info(f"Posted {len(successful_comments)} comments successfully, {len(failed_comments)} failed")
-            return successful_comments, failed_comments
-
-        except Exception as e:
-            logger.error(f"Error in async_post_comments: {str(e)}")
-            raise

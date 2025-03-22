@@ -33,8 +33,8 @@ def parse_content(content: str) -> AnswerGroup:
             problem_id = extract_problem_id(problem_match.group(1))
             problem_content = problem_match.group(2).strip()
 
-            # Extract subproblems (#### (X))
-            subproblem_pattern = r"^####\s+\(([^\n]*)\)\n([\s\S]*?)(?=^####\s+\(|\Z)"
+            # Extract subproblems (#### (X)  )
+            subproblem_pattern = r"^####\s+\(([^\n]*)\)[^\n]*\n([\s\S]*?)(?=^####\s+\(|\Z)"
             subproblem_matches = re.finditer(
                 subproblem_pattern, problem_content, re.MULTILINE
             )

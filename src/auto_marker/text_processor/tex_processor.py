@@ -1,6 +1,7 @@
 import re
 from auto_marker.basics import ProblemID, AnswerGroup, Answer
 from auto_marker.text_processor.utils import extract_chapter_id, extract_problem_id
+from auto_marker.logging import logger
 
 
 def parse_content(content: str, problem_list: list[ProblemID]) -> AnswerGroup:
@@ -14,35 +15,50 @@ def parse_content(content: str, problem_list: list[ProblemID]) -> AnswerGroup:
     Returns:
         An AnswerGroup object containing the extracted answers
     """
+    logger.debug("Starting to parse content with %d problems in problem_list", len(problem_list))
     ret = AnswerGroup()
 
     # Extract the document body (between \begin{document} and \end{document})
     document_match = re.search(r"\\begin{document}(.*?)\\end{document}", content, re.DOTALL | re.MULTILINE)
     if not document_match:
+        logger.debug("No document environment found in the content")
         return ret
 
     document_content = document_match.group(1)
+    logger.debug("Extracted document content with length %d", len(document_content))
 
     # Extract sections (chapters)
     chapters = _extract_chapters(document_content)
+    logger.debug("Extracted %d chapters from document", len(chapters))
 
     # Process each chapter
     for chapter_id, chapter_content in chapters:
+        logger.debug("Processing chapter %s with content length %d", chapter_id, len(chapter_content))
+
         # Extract problems from the chapter
         problems = _extract_problems(chapter_content)
+        logger.debug("Extracted %d problems from chapter %s", len(problems), chapter_id)
 
         for problem_id_str, problem_content in problems:
             # Process each problem
+            logger.debug("Looking for problem ID %s in chapter %s", problem_id_str, chapter_id)
             problem_id = ProblemID.find_problem_id(problem_list, chapter_id, problem_id_str)
             if not problem_id:
+                logger.debug(
+                    "Problem ID %s not found in problem list when processing chapter %s", problem_id_str, chapter_id
+                )
                 print(
                     f"Warning: Problem ID {problem_id_str} not found in problem list when processing chapter {chapter_id}"  # noqa: E501
                 )
                 continue
+
+            logger.debug("Processing problem %s", problem_id)
             # Process the problem content to extract main answer and subproblems
             answer_content = _process_problem(problem_content, problem_id)
             ret[problem_id] = answer_content
+            logger.debug("Added answer for problem %s", problem_id)
 
+    logger.debug("Completed parsing content, extracted %d answers", len(ret))
     return ret
 
 
@@ -146,14 +162,19 @@ def _extract_problems(chapter_content: str) -> list[tuple[str, str]]:
     # Find the main enumerate environment
     begin_pos, end_pos, enumerate_content = _find_matching_environment(chapter_content, "enumerate")
     if begin_pos == -1:
+        logger.debug("No main enumerate environment found in chapter content")
         return problems
+
+    logger.debug(f"Found main enumerate environment with length {len(enumerate_content)}")
 
     # Find all \item entries in the main enumerate environment
     item_pattern = r"\\item\[([^\n]*)\.\](.*?)(?=\\item\[|\Z)"
     items = list(re.finditer(item_pattern, enumerate_content, re.DOTALL | re.MULTILINE))
 
     for item in items:
+        logger.debug(f"Found item with ID {item.group(1)}")
         problem_id = extract_problem_id(item.group(1))
+        logger.debug(f"Extracted problem ID {problem_id}")
 
         problem_content = item.group(2).strip()
         problems.append((problem_id, problem_content))
@@ -185,7 +206,9 @@ def _process_problem(problem_content: str, problem_id: ProblemID) -> Answer:
     answer_content.answer = problem_content[:begin_pos].strip()
 
     # Extract individual subproblems
+    logger.debug(f"Extracting subproblems from content with length {len(subproblems_content)}")
     subproblems = _extract_subproblems(subproblems_content)
+    logger.debug(f"Extracted {len(subproblems)} subproblems")
 
     # Add subproblems to the answer content, but only those in the problem_list
     for i, subproblem_content in enumerate(subproblems, start=1):

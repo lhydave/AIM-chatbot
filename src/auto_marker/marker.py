@@ -157,18 +157,17 @@ class Marker:
         # Set up problem list
         self.problem_list = parse_problem_list(self.config.problem_list)
 
-        # Set up OpenReview client
-        openreview_config = OpenReviewConfig(
+        # Set up OpenReview config (but don't create client yet)
+        self.openreview_config = OpenReviewConfig(
             username=self.config.openreview["username"],
             password=self.config.openreview["password"],
             venue_id=self.config.openreview["venue_id"],
             submission_store_path=str(self.raw_submissions_path),
             base_url=self.config.openreview.get("base_url", "https://api2.openreview.net"),
         )
-        self.openreview_client = OpenReviewInteract(openreview_config)
 
-        # Set up LLM client
-        llm_config = LLMConfig(
+        # Set up LLM config (but don't create client yet)
+        self.llm_config = LLMConfig(
             base_url=self.config.llm["base_url"],
             api_key=self.config.llm["api_key"],
             model=self.config.llm["model"],
@@ -178,7 +177,6 @@ class Marker:
             temperature=self.config.llm.get("temperature", 0.5),
             max_trials=self.config.llm.get("max_trials", 5),
         )
-        self.llm_interactor = LLMInteractor(llm_config)
 
         # Set up reference answer and problem description file paths
         self.reference_answer_file = self.reference_materials_path / f"HW{self.config.homework_id}-answer.md"
@@ -194,6 +192,30 @@ class Marker:
             logger.warning(f"Reference answer file {self.reference_answer_file} does not exist")
         if not self.problem_description_file.exists():
             logger.warning(f"Problem description file {self.problem_description_file} does not exist")
+
+    def _get_openreview_client(self) -> OpenReviewInteract:
+        """
+        Lazy-load the OpenReview client when needed.
+        
+        Returns:
+            OpenReviewInteract: The initialized OpenReview client
+        """
+        if not hasattr(self, "_openreview_client"):
+            logger.info("Initializing OpenReview client...")
+            self._openreview_client = OpenReviewInteract(self.openreview_config)
+        return self._openreview_client
+
+    def _get_llm_interactor(self) -> LLMInteractor:
+        """
+        Lazy-load the LLM interactor when needed.
+        
+        Returns:
+            LLMInteractor: The initialized LLM interactor
+        """
+        if not hasattr(self, "_llm_interactor"):
+            logger.info("Initializing LLM client...")
+            self._llm_interactor = LLMInteractor(self.llm_config)
+        return self._llm_interactor
 
     def _check_raw_submissions_exist(self) -> bool:
         """Check if all raw submissions are in self.processed_submissions."""
@@ -266,7 +288,8 @@ class Marker:
         logger.info(f"Downloading submissions for homework: {self.config.homework_id} to {self.raw_submissions_path}")
 
         # Use OpenReview client to fetch submissions
-        submissions, failed_submissions = await self.openreview_client.process_all_submissions(self.config.homework_id)
+        openreview_client = self._get_openreview_client()
+        submissions, failed_submissions = await openreview_client.process_all_submissions(self.config.homework_id)
 
         if failed_submissions:
             logger.warning(f"Failed to process {len(failed_submissions)} submissions:")
@@ -407,8 +430,9 @@ class Marker:
         log_file = self.mark_logs_path / f"submission{submission.submission_number}_{problem_id}.txt"
 
         try:
-            # Use LLM interactor to mark the problem
-            mark_result = await self.llm_interactor.mark_problem(
+            # Get LLM interactor and use it to mark the problem
+            llm_interactor = self._get_llm_interactor()
+            mark_result = await llm_interactor.mark_problem(
                 problem_id=problem_id,
                 problem_description=problem_description,  # type: ignore
                 reference_answer=reference_answer,  # type: ignore
@@ -601,7 +625,8 @@ class Marker:
 
         # Post the comments using the OpenReview client
         try:
-            successful_comments, failed_comments = await self.openreview_client.post_comments(
+            openreview_client = self._get_openreview_client()
+            successful_comments, failed_comments = await openreview_client.post_comments(
                 student_submissions=valid_submissions, comment_contents=comment_contents
             )
 
@@ -687,7 +712,8 @@ class Marker:
 
         # Post the comments using the OpenReview client
         try:
-            successful_comments, failed_comments = await self.openreview_client.post_comments(
+            openreview_client = self._get_openreview_client()
+            successful_comments, failed_comments = await openreview_client.post_comments(
                 student_submissions=valid_submissions, comment_contents=comment_contents
             )
 

@@ -109,5 +109,12 @@ def extract_problem_id(text: str) -> str:
         if match.group(1).lower() == "extra":
             return "extra"
         return match.group(1)
+    match = re.search(r"([一二三四五六七八九十]+)\.?", text)
+    if match:
+        try:
+            return str(convert_to_arabic_number(match.group(1)))
+        except ValueError:
+            logger.warning(f"Ill-formatted problem ID: {text}, possibly cause a problem in the future")
+            return match.group(1)
     logger.warning(f"Ill-formatted problem ID: {text}, possibly cause a problem in the future")
     return text

@@ -320,12 +320,21 @@ def parse_problem_list(problem_list_str: str) -> list[ProblemID]:
         if not line:
             continue
 
+        if "，" in line or "：" in line or "（" in line or "）" in line:
+            logger.error(
+                f"Chinese punctuation detected in problem list: {line}. Please use English punctuation instead."
+            )
+            raise ValueError("Chinese punctuation detected in problem list")
+
+
+
         # Extract chapter number and problem list
         match = re.match(r"chapter\s+(\w+):\s*(.*)", line, re.IGNORECASE)
         if not match:
             continue
 
         chapter_id = match.group(1)
+        # check chinese comma
         problems = match.group(2).split(",")
 
         for problem in problems:
@@ -488,8 +497,15 @@ def filter_answers(
                 filtered_answer_group.add_sub_answer(problem_id, subproblem_id, default_answer)
         else:
             logger.debug(f"Found problem {found_problem_id} in chapter {chapter_id}")
+
             # Add the existing answer
             filtered_answer_group[problem_id] = copy.deepcopy(answer_group[found_problem_id])
+
+            # check if subproblem lists are the same
+            if found_problem_id.subproblem_id != problem_id.subproblem_id:
+                logger.warning(
+                    f"Subproblem list mismatch for {problem_id}. Expected {problem_id.subproblem_id}, found {found_problem_id.subproblem_id}"  # noqa: E501
+                )
 
             # clear the subproblems for further check
             filtered_answer_group[problem_id].sub_answers.clear()

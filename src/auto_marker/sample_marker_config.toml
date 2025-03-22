@@ -1,21 +1,25 @@
-# Homework ID to process
+# 要处理的作业ID
 homework_id = "1"
 
-# Problem list configuration
-# The format follows "chapter X: problem1,problem2,problem3(subproblem1)(subproblem2),..."
-# Each line represents problems for a chapter
+# 问题列表配置
+# 格式遵循 "chapter X: 问题1ID,问题2ID,问题3ID(子问题1ID)(子问题2ID),..."
+# 每行代表一个章节的问题
+# 即使问题列表中包含所有子问题，子问题ID也需要全部列出。例如，如果问题1有子问题a和b，问题列表应该是"1(a)(b)"而不是"1"
+# 子问题ID应该按照它们在问题描述中出现的顺序排列
+# 如果一个问题没有子问题，应省略子问题ID
+# 请注意不要使用中文标点符号
 problem_list = """
 chapter 1: 1,2,3
 chapter 2: 1,2(1)(2),3
 """
 
-# OpenReview configuration
+# OpenReview配置
 [openreview]
 username = "your_email@example.com"
 password = "your_password"
 venue_id = "PKU.edu/2025/Spring/AIM"
 
-# LLM configuration
+# LLM配置
 [llm]
 base_url = "https://base/url/to/llm"
 api_key = "your_openai_api_key"
@@ -23,27 +27,27 @@ model = "gpt-4-turbo"
 temperature = 0.5
 max_trials = 5
 
-# Directory configurations
+# 目录配置
 [paths]
-# Path to the directory containing reference materials: problem descriptions and reference answers
+# 包含参考资料的目录路径：问题描述和参考答案
 reference_materials = "../reference_materials"
-# Path to the directory containing processed submissions
+# 包含处理后提交内容的目录路径
 processed_submissions = "../processed_submissions"
-# Path to the directory containing raw submissions
+# 包含原始提交内容的目录路径
 raw_submissions = "../raw_submissions"
-# Path to the directory containing human readable mark logs of the interactions with the LLM
+# 包含与LLM交互的可读标记日志的目录路径
 mark_logs = "../mark_logs"
-# Path to the directory containing human-edited marks
+# 包含人工编辑标记的目录路径
 human_marks = "../human_marks"
 
-# Marking prompt templates
+# 标记提示模板
 [prompts]
-# Template used for problems without subproblems
-# Available placeholders:
-# - {problem_description}: The full problem description
-# - {reference_answer}: The reference answer
-# - {student_answer}: The student's submitted answer
-# This template is used when evaluating a complete problem that doesn't have subproblems
+# 用于没有子问题的题目的模板
+# 可用占位符：
+# - {problem_description}: 完整的问题描述
+# - {reference_answer}: 参考答案
+# - {student_answer}: 学生提交的答案
+# 该模板用于评估没有子问题的完整题目
 no_subproblem_template = """
 你是《AI中的数学》课程助教，负责批改学生的作业。请按照以下内容要求对学生的作业进行批改：
 # 问题描述
@@ -68,12 +72,11 @@ no_subproblem_template = """
 请使用markdown格式回答，只需要批改，不需要给分数或者评级。
 """
 
-# Template for the initial round of a problem with subproblems
-# Available placeholders:
-# - {problem_description}: The overall problem description (before all subproblems)
-# - {subproblem_nums}: The number of subproblems to evaluate
-# This template is used as the first message when starting evaluation of a problem
-# that contains multiple subproblems, before any specific subproblem is evaluated
+# 用于包含子问题的题目的初轮模板
+# 可用占位符：
+# - {problem_description}: 整体问题描述（不包含所有子问题）
+# - {subproblem_nums}: 需要评估的子问题数量
+# 该模板用于开始评估包含多个子问题的题目的第一条消息，在评估任何具体子问题之前
 subproblem_first_round_template = """
 你是《AI中的数学》课程助教，负责批改学生的作业，这份作业包含多个子问题。
 
@@ -87,14 +90,13 @@ subproblem_first_round_template = """
 请确认你已收到问题描述并准备好批改。接下来的每一轮，你将批改一个子问题。
 """
 
-# Template for evaluating individual subproblems
-# Available placeholders:
-# - {problem_description}: The description for this specific subproblem
-# - {reference_answer}: The reference answer for this subproblem
-# - {student_answer}: The student's answer for this subproblem
-# - {subproblem_id}: The identifier of the subproblem (e.g., "1", "2", "a", "b")
-# This template is used for each subproblem after the first round,
-# allowing detailed evaluation of individual parts of a multi-part problem
+# 用于评估单个子问题的模板
+# 可用占位符：
+# - {problem_description}: 该具体子问题的描述
+# - {reference_answer}: 该子问题的参考答案
+# - {student_answer}: 该子问题的学生答案
+# - {subproblem_id}: 子问题的标识符（例如，“1”，“2”，“a”，“b”）
+# 该模板用于第一轮之后的每个子问题，允许详细评估多部分问题的各个部分
 subproblem_round_template = """
 你现在正在批改子问题 {subproblem_id}。
 
@@ -122,8 +124,8 @@ subproblem_round_template = """
 请使用markdown格式回答，只需要批改，不需要给分数或者评级。
 """
 
-# Template for LLM mark file
-# This is inserted at the top of the LLM-generated mark files before the feedback content
+# LLM标记文件模板
+# 这是在反馈内容之前插入到LLM生成的标记文件顶部的内容
 llm_mark_template = """
 # 自动批改反馈
 
@@ -132,11 +134,11 @@ llm_mark_template = """
 ---
 """
 
-# Template for human mark file
-# This is inserted at the top of the human-editable mark files before the feedback content
-# You have two options for human marks: modifying the LLM-generated mark or providing the revision of the LLM-generated mark
-# This template is used for the latter case, where the human mark is a revision of the LLM-generated mark
-# If you also upload LLM marks, it is recommended to use the revision template for human marks, otherwise OpenReview may exceed the length limit
+# 人工标记文件模板
+# 这是在反馈内容之前插入到人工可编辑标记文件顶部的内容
+# 你有两种人工标记选项：修改LLM生成的标记或提供LLM生成标记的修订版
+# 该模板用于后者情况，其中人工标记是LLM生成标记的修订版
+# 如果你也上传LLM标记，建议使用修订模板进行人工标记，否则OpenReview可能会超出长度限制
 human_mark_template = """
 # 对自动批改的人工修订
 

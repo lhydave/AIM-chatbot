@@ -116,7 +116,7 @@ python3 RAG.py
 
 ### 自动批改系统
 
-自动批改系统组件是一个独立组件，它可以全流程自动化学生作业的批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。详细的使用说明和配置选项请参阅[自动评分系统文档](src/auto_marker/README.md)。
+自动批改系统组件是一个独立组件，它可以全流程自动化学生作业的批改。它和 [OpenReview](https://openreview.net/) 系统进行交互，从中获取学生提交的作业，LLM将学生回答与标准答案进行比较，并生成相应的反馈，并自动提交到 OpenReview 系统中。详细的使用说明和配置选项请参阅[自动批改系统文档](src/auto_marker/README.md)。
 
 ## 注意事项
 

@@ -179,8 +179,8 @@ class Marker:
         )
 
         # Set up reference answer and problem description file paths
-        self.reference_answer_file = self.reference_materials_path / f"HW{self.config.homework_id}-answer.md"
-        self.problem_description_file = self.reference_materials_path / f"HW{self.config.homework_id}-description.md"
+        self.reference_answer_file = self.reference_materials_path / f"HW{self.config.homework_id}-answer.tex"
+        self.problem_description_file = self.reference_materials_path / f"HW{self.config.homework_id}-description.tex"
 
         # Initialize data containers
         self.processed_submissions: dict[str, StudentSubmission] = {}
@@ -196,7 +196,7 @@ class Marker:
     def _get_openreview_client(self) -> OpenReviewInteract:
         """
         Lazy-load the OpenReview client when needed.
-        
+
         Returns:
             OpenReviewInteract: The initialized OpenReview client
         """
@@ -208,7 +208,7 @@ class Marker:
     def _get_llm_interactor(self) -> LLMInteractor:
         """
         Lazy-load the LLM interactor when needed.
-        
+
         Returns:
             LLMInteractor: The initialized LLM interactor
         """
@@ -262,7 +262,7 @@ class Marker:
         # Load reference answers
         if self.reference_answer_file.exists():
             with open(self.reference_answer_file, encoding="utf-8") as f:
-                self.reference_answers = parse_content_with_filter(f.read(), "markdown", self.problem_list)
+                self.reference_answers = parse_content_with_filter(f.read(), "tex", self.problem_list)
                 logger.info(f"Loaded {len(self.reference_answers)} reference answers.")
         else:
             logger.warning(f"Reference answer file {self.reference_answer_file} does not exist")
@@ -273,7 +273,7 @@ class Marker:
         # Load problem descriptions
         if self.problem_description_file.exists():
             with open(self.problem_description_file, encoding="utf-8") as f:
-                self.problem_descriptions = parse_content_with_filter(f.read(), "markdown", self.problem_list)
+                self.problem_descriptions = parse_content_with_filter(f.read(), "tex", self.problem_list)
                 logger.info(f"Loaded {len(self.problem_descriptions)} problem descriptions.")
         else:
             logger.warning(f"Problem description file {self.problem_description_file} does not exist")

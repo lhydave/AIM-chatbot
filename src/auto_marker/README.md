@@ -107,27 +107,98 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 > *注意：请严格按照样例格式提交作业，否则可能导致系统出现错误。*
 
-## 工作流程以及人工校验的步骤
+## 工作流程
 
 0. **准备工作**：准备好配置文件、API 密钥、作业 ID 等信息，注意事项：
-   1. 确保配置文件里的problem_list已经严格按照要求填写，特别是子问题的格式以及英文标点符号的要求，否则可能会导致系统无法正确解析，请参考样例配置文件
-1. **下载提交**：从 OpenReview 下载学生提交，可能需要做的人工校验包括：
-   1. 检查提交的标题格式是否正确，如果不正确，系统会跳过这一提交并报告 warning
-       - **解决方案**：请到 OpenReview 平台人工将标题格式修改为正确格式
-   2. 检查每个学生每次作业是否有重复提交，系统会忽略重复提交并报告 warning 
-      - **解决方案**：请到 OpenReview 平台人工删除重复提交
-   3. 检查提交的压缩包中是否恰好包含一个 `.tex` 或 `.md` 文件，如果不是，系统会报告 warning
-      - **解决方案**：请将解压出来的文件进行人工整理，如果缺失文件，请与学生进行联系
+   - 确保配置文件里的problem_list已经严格按照要求填写，特别是子问题的格式以及英文标点符号的要求，否则可能会导致系统无法正确解析，请参考样例配置文件
+1. **下载提交**：从 OpenReview 下载学生提交
 2. **加载参考资料**：加载标准答案和问题描述，该部分由教学团队提供，请确保参考答案和问题描述的格式正确
-3. **处理提交**：解析提交内容，提取关键部分，可能需要做的人工校验包括：
-   1. 每个提交是否解析出来了所有的问题回答、包括子问题回答，如果没有，系统会报告warning并使用默认回答来替代
-      - **解决方案**：请检查学生提交是否符合格式要求，如果不符合，可以自行修改（如果不符合的程度较低）或者要求学生重新提交（如果不符合的程度太高）。
-   2. 每个提交是否解析出来了额外的子问题，如果有，系统会报告warning
-      - **解决方案**：请检查学生提交是否符合格式要求，如果不符合，可以自行修改（如果不符合的程度较低）或者要求学生重新提交（如果不符合的程度太高）。例如，学生可能用 `####` 来分割非子问题的内容，这样会导致系统错误地将其解析为子问题。
+3. **处理提交**：解析提交内容，提取关键部分
 4. **批改**：使用 LLM 评估学生答案与标准答案的匹配度
 5. **发布LLM批改**：将自动批改结果发布回 OpenReview
 6. **人工校验**：查看和修改批改结果
 7. **发布人工批改**：将最终批改结果发布回 OpenReview
+
+## 自动邮件通知的学生作业解析错误
+
+系统包含一个自动邮件通知组件，用于向作业格式存在问题的学生发送提醒邮件。此功能可以在下载和处理学生提交后执行，自动分析日志文件中的警告信息，并向提交有问题的相关学生发送个性化的通知邮件。
+
+### 功能特点
+
+- **自动解析日志**：分析下载和处理阶段的日志文件，提取与学生相关的警告信息
+- **分类警告信息**：将警告信息按类型分为提交问题、格式问题、题目编号问题、子问题问题等
+- **个性化邮件**：根据学生的具体问题生成个性化的邮件内容
+- **支持多种邮箱**：支持多种学校邮箱服务器配置
+- **支持测试模式**：提供dry-run模式，可以预览邮件内容而不实际发送
+
+### 使用方法
+
+在使用前，请确保已经下载和处理了学生的提交，并生成了相应的日志文件。然后，在 [`src`](../) 目录下运行以下命令：
+
+```bash
+python email_notifier.py --hw_id <作业ID> [选项]
+```
+
+### 参数说明
+
+- `--hw_id`：必需，作业ID，例如"1"表示作业1
+- `--download_log`：可选，下载日志文件路径（默认：`../log/marker_hw{hw_id}_download.log`）
+- `--process_log`：可选，处理日志文件路径（默认：`../log/marker_hw{hw_id}_process.log`）
+- `--sender_email`：可选，发件人邮箱地址
+- `--sender_password`：可选，发件人邮箱密码
+- `--dry_run`：可选，测试模式，只打印邮件内容而不发送
+- `--log_file`：可选，指定通知系统的日志文件路径
+
+### 使用示例
+
+1. **测试模式**（查看邮件内容但不发送）：
+   ```bash
+   python email_notifier.py --hw_id 1 --dry_run
+   ```
+
+   如果内容较多，也可以将输出保存到文件中：
+   ```bash
+   python email_notifier.py --hw_id 1 --dry_run > email_content.txt
+   ```
+   这样，邮件内容会保存在 `email_content.txt` 文件中。
+
+2. **发送邮件**：
+   ```bash
+   python email_notifier.py --hw_id 1 --sender_email your_email@pku.edu.cn --sender_password your_password
+   ```
+
+3. **使用自定义日志文件**：
+   ```bash
+   python email_notifier.py --hw_id 1 --download_log custom_download.log --process_log custom_process.log --sender_email your_email@pku.edu.cn --sender_password your_password
+   ```
+
+### 邮件内容示例
+
+系统会根据学生的具体问题生成个性化的邮件，例如：
+
+```
+张三同学（学号 1234567890），
+
+你好！我们在自动批改系统中发现您提交的作业存在以下问题，请您及时检查并修正：
+
+提交问题：
+- HW1-1234567890-张三 submission has duplicate files
+
+文件格式问题：
+- Problem 1a in submission 1-1234567890-张三 has ill-formatted content
+
+这些问题可能导致自动批改系统无法正确识别您的答案。请确保：
+1. 章节和问题的格式正确
+2. 对于有子问题的题目，正确标注子问题编号
+3. 提交的文件使用正确的模板（LaTeX或Markdown）
+
+如有任何疑问，请联系课程助教。
+
+此致，
+AI中的数学课助教团队
+```
+
+> **注意**：确保发送邮件前已经获得相应的邮箱权限，特别是使用学校邮箱时可能需要特殊的SMTP设置或应用专用密码。
 
 ## 存储内容
 
@@ -147,11 +218,11 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 ### 如何创建参考答案？
 
-参考答案应采用与学生提交相同的 Markdown 格式，放置在配置文件中指定的参考资料目录中。文件命名应为 `HW{作业ID}-answer.md`。也可参考 [`sample-problem-material.md`](sample-problem-material.md) 文件。
+参考答案应采用与学生提交相同的 LaTeX 格式，放置在配置文件中指定的参考资料目录中。文件命名应为 `HW{作业ID}-answer.tex`。也可参考 [`sample-problem-material.tex`](sample-problem-material.tex) 文件。
 
 ### 如何创建问题描述？
 
-问题描述同样使用 Markdown 格式，命名为 `HW{作业ID}-description.md`，放置在参考资料目录中。也可参考 [`sample-problem-material.md`](sample-problem-material.md) 文件。
+问题描述同样使用 LaTeX 格式，命名为 `HW{作业ID}-description.tex`，放置在参考资料目录中。也可参考 [`sample-problem-material.tex`](sample-problem-material.tex) 文件。
 
 ### 如何处理人工校验？
 

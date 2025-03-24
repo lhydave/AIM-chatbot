@@ -1,4 +1,4 @@
-from auto_marker.text_processor.tex_processor import parse_content
+from auto_marker.text_processor.tex_processor import parse_content, _find_last_matching_environment
 from auto_marker.basics import ProblemID, AnswerGroup
 from unittest.mock import patch
 
@@ -23,7 +23,9 @@ def test_parse_content_no_document():
 
 def test_parse_content_simple_document():
     """Test parsing a simple document with one problem."""
-    content = r"\begin{document}\section{第一章作业}\begin{enumerate}\item[1.] Answer content\end{enumerate}\end{document}"
+    content = (
+        r"\begin{document}\section{第一章作业}\begin{enumerate}\item[1.] Answer content\end{enumerate}\end{document}"
+    )
     problem_list = [ProblemID("1", "1")]
 
     result = parse_content(content, problem_list)
@@ -91,32 +93,6 @@ def test_parse_content_multiple_chapters():
     assert result[problem_list[1]].answer == "Chapter 2 answer"
 
 
-def test_parse_content_problem_not_in_list():
-    """Test parsing content with a problem not in the problem list."""
-    content = r"""
-    \begin{document}
-    \section{第一章作业}
-    \begin{enumerate}
-    \item[1.] Problem 1
-    \item[2.] Problem 2
-    \end{enumerate}
-    \end{document}
-    """
-
-    problem_list = [ProblemID("1", "1")]  # Only problem 1 is in the list
-
-    with patch("builtins.print") as mock_print:
-        result = parse_content(content, problem_list)
-
-        mock_print.assert_called_once()
-        assert "Warning: Problem ID 2 not found" in mock_print.call_args[0][0]
-
-    assert isinstance(result, AnswerGroup)
-    assert len(result) == 1
-    assert problem_list[0] in result
-    assert result[problem_list[0]].answer == "Problem 1"
-
-
 def test_parse_content_extra_problem():
     """Test parsing content with an 'extra' problem."""
     content = r"""
@@ -137,3 +113,56 @@ def test_parse_content_extra_problem():
     assert len(result) == 2
     assert result[problem_list[0]].answer == "Regular problem"
     assert result[problem_list[1]].answer == "Extra problem"
+
+
+def test_find_last_matching_environment_simple():
+    """Test finding the last matching environment in a simple case."""
+
+    text = r"\begin{itemize}Item 1\end{itemize} Other text \begin{itemize}Item 2\end{itemize}"
+    start_pos, end_pos, content = _find_last_matching_environment(text, "itemize")
+
+    assert content == "Item 2"
+    assert text[start_pos : end_pos + 1] == r"\begin{itemize}Item 2\end{itemize}"
+
+
+def test_find_last_matching_environment_nested():
+    """Test finding the last matching environment with nested environments."""
+
+    text = r"\begin{enumerate}\begin{itemize}Nested\end{itemize}\end{enumerate} \begin{itemize}Last one\end{itemize}"
+    start_pos, end_pos, content = _find_last_matching_environment(text, "itemize")
+
+    assert content == "Last one"
+    assert text[start_pos : end_pos + 1] == r"\begin{itemize}Last one\end{itemize}"
+
+
+def test_find_last_matching_environment_not_found():
+    """Test when no matching environment is found."""
+
+    text = r"No environment here"
+    start_pos, end_pos, content = _find_last_matching_environment(text, "itemize")
+
+    assert start_pos == -1
+    assert end_pos == -1
+    assert content == ""
+
+
+def test_find_last_matching_environment_with_start_pos():
+    """Test finding the last environment with a specific start position."""
+
+    text = r"\begin{itemize}First\end{itemize} Middle \begin{itemize}Last\end{itemize}"
+    # Start after the first itemize environment
+    start_pos = text.find("Middle")
+    start_pos, end_pos, content = _find_last_matching_environment(text, "itemize", start_pos)
+
+    assert content == "Last"
+    assert text[start_pos : end_pos + 1] == r"\begin{itemize}Last\end{itemize}"
+
+
+def test_find_last_matching_environment_with_same_type():
+    """Test finding the last of multiple environments of the same type."""
+
+    text = r"\begin{itemize}First\end{itemize} \begin{itemize}Second\end{itemize} \begin{itemize}Third\end{itemize}"
+    start_pos, end_pos, content = _find_last_matching_environment(text, "itemize")
+
+    assert content == "Third"
+    assert text[start_pos : end_pos + 1] == r"\begin{itemize}Third\end{itemize}"

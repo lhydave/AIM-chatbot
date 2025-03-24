@@ -278,8 +278,10 @@ class OpenReviewInteract:
 
                 # Skip if student ID is already processed
                 if student_id in student_ids:
-                    logger.warning(f"Skipping duplicate submission for student {student_id}")
+                    logger.warning(f"Submission {submission.number} is duplicate for {title}, skipping")
                     continue
+
+                student_ids.add(student_id)
 
                 # Create task for concurrent processing
                 tasks.append(self.process_submission(submission))

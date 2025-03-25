@@ -16,7 +16,7 @@ def parse_content(content: str) -> AnswerGroup:
     ret = AnswerGroup()
 
     # Split the content by chapter headers (## chapter_name)
-    chapter_pattern = r"^## ([^\n]*)\n([\s\S]*?)(?=^## |\Z)"
+    chapter_pattern = r"^\s*## ([^\n]*)\n([\s\S]*?)(?=^\s*## |\Z)"
     chapter_matches = re.finditer(chapter_pattern, content, re.MULTILINE)
 
     for chapter_match in chapter_matches:
@@ -26,7 +26,7 @@ def parse_content(content: str) -> AnswerGroup:
         chapter_content = chapter_match.group(2).strip()
 
         # Split the chapter content by problem headers (### X. or ### extra.)
-        problem_pattern = r"^###\s+([^\n]*).*?\n([\s\S]*?)(?=^###\s+([^\n]*)|\Z)"
+        problem_pattern = r"^\s*###\s+([^\n]*).*?\n([\s\S]*?)(?=^\s*###\s+([^\n]*)|\Z)"
         problem_matches = re.finditer(problem_pattern, chapter_content, re.MULTILINE)
 
         for problem_match in problem_matches:
@@ -34,7 +34,7 @@ def parse_content(content: str) -> AnswerGroup:
             problem_content = problem_match.group(2).strip()
 
             # Extract subproblems (#### (X)  )
-            subproblem_pattern = r"^####\s+\(([^\n]*)\)[^\n]*\n([\s\S]*?)(?=^####\s+\(|\Z)"
+            subproblem_pattern = r"^\s*####\s+\(([^\n]*)\)[^\n]*\n([\s\S]*?)(?=^\s*####\s+\(|\Z)"
             subproblem_matches = re.finditer(
                 subproblem_pattern, problem_content, re.MULTILINE
             )

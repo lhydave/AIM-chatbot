@@ -255,7 +255,7 @@ def _extract_problems(chapter_content: str, chapter_id: str) -> list[tuple[str, 
         )
 
     # Find all \item entries in the main enumerate environment
-    item_pattern = r"\\item\s*\[([^\n]*)\.\](.*?)(?=\\item\[([^\n]*)\.\]|\Z)"
+    item_pattern = r"\\item\s*\[([^\n]*)\.\](.*?)(?=\\item\s*\[([^\n]*)\.\]|\Z)"
     items = re.finditer(item_pattern, enumerate_content, re.DOTALL | re.MULTILINE)
 
     for item in items:

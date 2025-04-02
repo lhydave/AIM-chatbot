@@ -53,6 +53,12 @@
       }
     },
     {
+      "problem_id": "chap1.probextra",
+      "answer": {
+        "answer": "额外问题的回答"
+      }
+    },
+    {
       "problem_id": "chap2.prob1",
       "answer": {
         "answer": ""

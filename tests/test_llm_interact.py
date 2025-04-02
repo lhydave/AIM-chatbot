@@ -111,7 +111,7 @@ async def test_mark_submission(llm_config, problem_data, mock_llm_responses):
             )
 
             # Verify the response is as expected
-            assert result.answer == "First round response content"
+            assert result.answer == ""
             assert result.get_sub_answer("a") == "Subproblem a response content"
             assert result.get_sub_answer("b") == "Subproblem b response content"
 

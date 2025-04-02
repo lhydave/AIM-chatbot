@@ -41,7 +41,7 @@ def parse_content(content: str, problem_list: list[ProblemID]) -> AnswerGroup:
     # Extract the document body (between \begin{document} and \end{document})
     document_match = re.search(r"\\begin{document}(.*?)\\end{document}", content, re.DOTALL | re.MULTILINE)
     if not document_match:
-        logger.debug("No document environment found in the content")
+        logger.warning("No \\begin{document} and \\end{document} found in content")
         return ret
 
     document_content = document_match.group(1)

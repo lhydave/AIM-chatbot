@@ -1,6 +1,7 @@
 import re
 import os
 import smtplib
+import csv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional
@@ -303,6 +304,38 @@ AI中的数学课助教团队
         logger.info(f"Successfully notified {len(notified_students)} students")
         return notified_students
 
+    def export_student_list(self, warnings_by_student: dict[str, tuple[str, list[str]]], output_csv_path: str) -> None:
+        """
+        Export list of students with warnings to a CSV file.
+
+        Args:
+            warnings_by_student: Dictionary mapping student IDs to tuples of (student_name, list of warning messages)
+            output_csv_path: Path to output CSV file
+        """
+        try:
+            # Create a set of unique student entries
+            students = set()
+            for student_id, (student_name, warnings) in warnings_by_student.items():
+                if warnings:  # Only include students with warnings
+                    students.add((student_id, student_name))
+
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(output_csv_path) or ".", exist_ok=True)
+
+            # Write to CSV
+            with open(output_csv_path, "w", encoding="utf-8", newline="") as csvfile:
+                csv_writer = csv.writer(csvfile)
+                # Write header
+                csv_writer.writerow(["学号", "姓名"])
+                # Write data (sorted by student ID)
+                for student in sorted(students):
+                    csv_writer.writerow(student)
+
+            logger.info(f"Successfully exported {len(students)} students with issues to {output_csv_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to export student list: {str(e)}")
+
 
 def main():
     """Main function to run the email notifier."""
@@ -316,6 +349,12 @@ def main():
     parser.add_argument("--sender_password", help="Sender email password")
     parser.add_argument("--dry_run", action="store_true", help="Print emails instead of sending them")
     parser.add_argument("--log_file", help="Path to log file")
+    parser.add_argument(
+        "--export_csv",
+        nargs="?",
+        const="problematic_students.csv",
+        help="Export list of problematic students to CSV (default: problematic_students.csv)",
+    )
 
     args = parser.parse_args()
 
@@ -349,6 +388,10 @@ def main():
         notifier.notify_students(warnings_by_student, args.sender_email, args.sender_password, dry_run=args.dry_run)
     else:
         notifier.notify_students(warnings_by_student, dry_run=args.dry_run)
+
+    # Export student list to CSV if requested
+    if args.export_csv:
+        notifier.export_student_list(warnings_by_student, args.export_csv)
 
     logger.info("Email notification process completed")
 

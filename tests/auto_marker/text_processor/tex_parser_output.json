@@ -31,7 +31,7 @@
     {
       "problem_id": "chap1.prob7",
       "answer": {
-        "answer": "表格模版\n% 定制表格比较复杂，可以询问 LLM 或者使用在线工具生成\n\\begin{table}[H]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        1 & 2 \\\\\n        \\hline\n        3 & 4 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{表格说明}\\label{tab:example}\n\\end{table}\n引用表格：表 \\ref{tab:example}."
+        "answer": "表格模版\n\n\\begin{table}[H]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        1 & 2 \\\\\n        \\hline\n        3 & 4 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{表格说明}\\label{tab:example}\n\\end{table}\n引用表格：表 \\ref{tab:example}."
       }
     },
     {

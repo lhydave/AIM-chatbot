@@ -263,6 +263,10 @@ class OpenReviewInteract:
         logger.info(f"Processing submissions for homework ID: {homework_id}")
         submissions = self.get_submissions()
 
+        # sort descendingly according to submission number
+        # this supposes that new submissions are added at the end, which is important for robust duplicate detection
+        submissions.sort(key=lambda x: int(x.number or "0"), reverse=True)
+
         valid_submissions = []
         failed_submission_titles = []
         student_ids = set()

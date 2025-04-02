@@ -151,6 +151,16 @@ class EmailNotifier:
             else:
                 categories["other_issues"].append(warning)
 
+        # Check if only submission_issues is non-empty
+        other_categories_empty = all(
+            len(categories[cat]) == 0
+            for cat in ["format_issues", "problem_id_issues", "subproblem_issues", "other_issues"]
+        )
+
+        # it is okay to have submission_issues only since it does not affect the grading
+        if other_categories_empty and categories["submission_issues"]:
+            categories["submission_issues"] = []
+
         return categories
 
     def generate_email_content(
@@ -214,6 +224,7 @@ class EmailNotifier:
 1. 章节和问题的格式正确
 2. 对于有子问题的题目，正确标注子问题编号
 3. 提交的文件使用正确的模板（LaTeX或Markdown）
+4. enumerate 环境的范围正确
 
 如有任何疑问，请联系课程助教。
 

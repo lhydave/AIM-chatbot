@@ -550,11 +550,19 @@ class OpenReviewInteract:
             signature: The signature to use for posting
             comment_content: The content of the review
         """
+        # check if there is already a review note
+        review_notes = self.client.get_notes(
+            invitation=f"{self.config.venue_id}/Submission{submission_number}/-/Official_Review"
+        )
+        if review_notes:
+            logger.warning(f"Review already exists for submission {submission_number}, overwriting it")
+        note_id = review_notes[0].id if review_notes else None  # type: ignore
         review_note = openreview.api.Note(
             content={
                 "title": {"value": f"Marks for submission {submission_number}"},
                 "review": {"value": comment_content},
-            }
+            },
+            id=note_id,
         )
 
         self.client.post_note_edit(

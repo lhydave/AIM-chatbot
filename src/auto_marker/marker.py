@@ -193,6 +193,22 @@ class Marker:
         if not self.problem_description_file.exists():
             logger.warning(f"Problem description file {self.problem_description_file} does not exist")
 
+    def dump_submission(self, submission: StudentSubmission) -> None:
+        """
+        Save a student submission to a JSON file.
+
+        Args:
+            submission: The StudentSubmission object to save
+        """
+        file_path = (
+            self.processed_submissions_path
+            / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}.json"
+        )
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(submission.to_json(), f, ensure_ascii=False, indent=2)
+
+        logger.debug(f"Saved submission {submission.submission_number} to {file_path}")
+
     def _get_openreview_client(self) -> OpenReviewInteract:
         """
         Lazy-load the OpenReview client when needed.
@@ -247,8 +263,7 @@ class Marker:
             if not submission.marks:
                 return False
 
-        # Also check for mark files
-        return all(self.processed_submissions_path.glob("*-marks.md"))
+        return True
 
     def load_reference_materials(self) -> None:
         """
@@ -303,12 +318,7 @@ class Marker:
 
         for submission in submissions:
             self.processed_submissions[submission.submission_number] = submission
-            source = (
-                self.processed_submissions_path
-                / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}.json"
-            )
-            with open(source, "w", encoding="utf-8") as f:
-                json.dump(submission.to_json(), f, ensure_ascii=False, indent=2)
+            self.dump_submission(submission)
 
             # Copy PDF to human_marks directory for manual review
             pdf_source = (
@@ -352,7 +362,7 @@ class Marker:
 
         logger.info(f"Loaded {len(self.processed_submissions)} submissions.")
 
-    def parse_submission(self, submission: StudentSubmission) -> StudentSubmission:
+    def parse_submission(self, submission: StudentSubmission) -> None:
         """
         Parse the submission content to extract the student's answers and filter it based on the problem list.
 
@@ -360,9 +370,6 @@ class Marker:
 
         Args:
             submission: The StudentSubmission object to parse
-
-        Returns:
-            The updated StudentSubmission object
         """
         # Parse the submission content
 
@@ -375,7 +382,9 @@ class Marker:
 
         # Update the submission with the parsed content
         submission.processed_source_code = parsed_content
-        return submission
+        self.processed_submissions[submission.submission_number] = submission
+        self.dump_submission(submission)
+        return None
 
     def parse_submissions(self) -> None:
         """
@@ -394,7 +403,7 @@ class Marker:
         logger.info("Parsing all submissions...")
 
         for submission_number, submission in self.processed_submissions.items():
-            self.processed_submissions[submission_number] = self.parse_submission(submission)
+            self.parse_submission(submission)
 
         logger.info("All submissions parsed.")
 
@@ -489,14 +498,8 @@ class Marker:
 
         # Update the submission with the marks
         submission.marks = marks
-
-        # Save the updated submission to the JSON file
-        submission_file = (
-            self.processed_submissions_path
-            / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}.json"
-        )
-        with open(submission_file, "w", encoding="utf-8") as f:
-            json.dump(submission.to_json(), f, ensure_ascii=False, indent=2)
+        self.processed_submissions[submission.submission_number] = submission
+        self.dump_submission(submission)
 
         # Save the marks to a Markdown-formatted file
         mark_file = (
@@ -504,7 +507,7 @@ class Marker:
             / f"submission{submission.submission_number}-{submission.student_id}-{submission.student_name}-llm_marks.md"
         )
         with open(mark_file, "w", encoding="utf-8") as f:
-            f.write(self.config.prompts["llm_mark_template"] + "\n\n" + marks.to_markdown_str())
+            f.write(self.config.prompts["llm_mark_template"] + "\n\n" + marks.to_markdown_str("mark"))
 
         # Copy to human_marks directory for manual editing
         human_mark_file = (
@@ -513,7 +516,7 @@ class Marker:
         )
         try:
             with open(human_mark_file, "w", encoding="utf-8") as f:
-                f.write(self.config.prompts["human_mark_template"] + "\n\n" + marks.to_markdown_str())
+                f.write(self.config.prompts["human_mark_template"] + "\n\n" + marks.to_markdown_str("mark"))
             logger.info(
                 f"Copied marks for submission {submission.submission_number} to human marks directory for editing"
             )
@@ -613,7 +616,8 @@ class Marker:
                 continue
 
             # Convert marks to markdown format for the comment
-            mark_content = submission.marks.to_markdown_str()
+            mark_content = self.config.prompts["llm_mark_template"] + "\n\n" + submission.marks.to_markdown_str("mark")
+            logger.debug(f"Mark content for submission {submission_number}: {mark_content}")
             comment_contents[submission.submission_number] = mark_content
             valid_submissions.append(submission)
 

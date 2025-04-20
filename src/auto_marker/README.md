@@ -22,6 +22,8 @@
 
 ### 基本用法
 
+首先，确保你的路径在 `src` 目录下，然后运行以下命令：
+
 ```bash
 python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项]
 ```

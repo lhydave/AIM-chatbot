@@ -152,7 +152,10 @@ class Answer:
         """
         result = f"{self.answer}\n\n"
         for sub_id, sub_answer in self.sub_answers:
-            result += f"#### {answer_name} to ({sub_id})\n\n{sub_answer}\n\n"
+            result += f"### {answer_name} to ({sub_id})\n\n{sub_answer}\n\n"
+        # replace all \( and \) with $
+        # replace all \[ and \] with $$
+        result = result.replace("\\(", "$").replace("\\)", "$").replace("\\[", "$$").replace("\\]", "$$")
         return result
 
     @classmethod
@@ -250,16 +253,22 @@ class AnswerGroup:
             logger.warning("Empty answer group")
             return result
         current_chapter = sorted_problem_ids[0].chapter_id
-        result += f"## {answer_name} for Chapter {current_chapter}\n\n"
+        result += f"# {answer_name} for chapter {current_chapter}\n\n"
 
-        for problem_id in sorted_problem_ids:
+        for num, problem_id in enumerate(sorted_problem_ids):
             if problem_id.chapter_id != current_chapter:
                 current_chapter = problem_id.chapter_id
-                result += f"\n\n## {answer_name} for Chapter {current_chapter}\n\n"
+                result += f"\n\n# {answer_name} for chapter {current_chapter}\n\n"
 
             answer = self.answers[problem_id]
-            result += f"## {answer_name} to {problem_id}\n\n"
+            if num > 0:
+                result += "\n\n---\n\n"  # make it more readable
+            result += f"## {answer_name} to problem {problem_id.problem_id}\n\n"
             result += answer.to_markdown_str(answer_name=answer_name)
+
+        # replace all \( and \) with $
+        # replace all \[ and \] with $$
+        result = result.replace("\\(", "$").replace("\\)", "$").replace("\\[", "$$").replace("\\]", "$$")
 
         return result
 
@@ -325,8 +334,6 @@ def parse_problem_list(problem_list_str: str) -> list[ProblemID]:
                 f"Chinese punctuation detected in problem list: {line}. Please use English punctuation instead."
             )
             raise ValueError("Chinese punctuation detected in problem list")
-
-
 
         # Extract chapter number and problem list
         match = re.match(r"chapter\s+(\w+):\s*(.*)", line, re.IGNORECASE)
@@ -427,7 +434,7 @@ class StudentSubmission:
         # Marks if available
         marks = None
         if "marks" in json_dict:
-            marks = AnswerGroup.from_json(json_dict["processed_source_code"])
+            marks = AnswerGroup.from_json(json_dict["marks"])
 
         human_marks = json_dict.get("human_marks", None)
 

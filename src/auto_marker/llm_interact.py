@@ -79,7 +79,7 @@ class LLMInteractor:
                 last_exception = e
                 logger.warning(f"LLM API call failed (attempt {attempt + 1}/{self.config.max_trials}): {str(e)}")
                 if attempt < self.config.max_trials - 1:
-                    backoff_time = 2**attempt
+                    backoff_time = 60*(2**attempt)
                     logger.info(f"Retrying in {backoff_time} seconds...")
                     # Use asyncio.sleep for non-blocking wait
                     await asyncio.sleep(backoff_time)

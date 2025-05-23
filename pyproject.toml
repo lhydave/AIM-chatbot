@@ -1,0 +1,33 @@
+[project]
+name = "aim-chatbot"
+version = "0.1.0"
+description = "AIM Chatbot System"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "chardet>=5.2.0",
+    "llama-index>=0.12.37",
+    "llama-index-embeddings-jinaai>=0.4.0",
+    "llama-index-llms-deepseek>=0.1.0",
+    "llama-index-llms-openai-like>=0.3.3",
+    "openai==1.60.1",
+    "openreview-py>=1.49.0",
+    "streamlit>=1.45.1",
+]
+
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ".. src"
+testpaths = "tests"
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-vv --capture=sys"

@@ -459,7 +459,7 @@ def parse_submission_title(title: str) -> tuple[str, str, str]:
     Returns:
         Tuple containing (homework_id, student_id, student_name)
     """
-    pattern = r"(?:HW|hw)\[?(\d+)\]?[-_](\d+)[-_](.+)"
+    pattern = r"(?:HW|hw)\[?(\w+?)\]?[-_](\d+)[-_](.+)"
     match = re.search(pattern, title)
     if not match:
         raise ValueError(f"Invalid submission title format: {title}")

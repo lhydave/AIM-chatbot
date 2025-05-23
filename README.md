@@ -12,13 +12,8 @@
 - 用户友好的 Web 界面
 
 ## 系统要求
-
-- git
-    - Mac 和 Linux 系统自带
-    - Windows 系统需要安装，可以参考[这个链接](https://cloud.tencent.com/developer/article/2099150)
-- conda
-    - 安装请参考[这个链接](https://docs.anaconda.com/miniconda/install/)
-    - 请注意，安装完 conda 还需要设置环境变量
+- uv
+    - 安装请参考[这个链接](https://docs.astral.sh/uv/getting-started/installation/)
 - Jina API 密钥
     - 向量数据库的 embedding 模型，从[这个链接](https://jina.ai/embeddings/)获取
 - 火山方舟引擎 API Key，LLM ID
@@ -34,23 +29,23 @@
 
 ## 安装步骤
 
-以下步骤都在终端中进行，如果遇到问题，请参考[遇到问题时候的检查方法](#遇到问题时候的检查方法)。
-
-1. 克隆项目仓库：
+1. 下载本项目
+- 你可以直接在该页面点击绿色的 `Code` 按钮，选择 `Download ZIP` 下载本项目，然后解压缩到本地
+- 或者你可以使用 git 命令行工具（如果是Windows用户，请安装git），直接在终端中输入以下命令：
 ```bash
 git clone https://github.com/lhydave/AIM-chatbot.git
+```     
+
+以下步骤都在终端中进行，如果遇到问题，请参考[遇到问题时候的检查方法](#遇到问题时候的检查方法)。
+
+2. 在终端中进入项目目录，如果上一步使用了 git 命令行工具下载的项目，请直接进入项目目录：
+```bash
 cd AIM-chatbot
 ```
 
-2. 创建并激活 conda 环境：
+3. 安装 python 依赖
 ```bash
-conda create -n aim-chatbot python=3.11 --no-default-packages
-conda activate aim-chatbot
-```
-
-3. 安装依赖包：
-```bash
-pip install -r requirements.txt --user
+uv sync
 ```
 
 4. 配置环境：
@@ -61,15 +56,9 @@ pip install -r requirements.txt --user
 
 以下步骤都在终端中进行，如果遇到问题，请参考[遇到问题时候的检查方法](#遇到问题时候的检查方法)。
 
-1. 每次使用的时候请先激活 conda 环境：
-```bash
-conda activate aim-chatbot
-```
-
-2. 启动应用：
 ```bash
 cd src
-streamlit run app.py
+uv run streamlit run app.py
 ```
 
 2. 在浏览器中打开 `http://localhost:8501`，即可开始使用（注意，这一步通常并不需要做，因为 streamlit 会自动打开浏览器）
@@ -89,7 +78,7 @@ streamlit run app.py
 
 ```bash
 cd src
-python3 RAG.py
+uv run RAG.py
 ```
 
 此时，你可以在命令行中进行交互，任何错误都会在终端中显示，方便你进行调试。

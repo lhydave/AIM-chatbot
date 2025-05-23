@@ -25,7 +25,7 @@
 首先，确保你的路径在 `src` 目录下，然后运行以下命令：
 
 ```bash
-python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项]
+uv run marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项]
 ```
 
 ### 参数说明
@@ -44,32 +44,32 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 
 1. **完整工作流程**（下载、加载参考资料、处理、批改、发布LLM结果）：
    ```bash
-   python marker_app.py --download --reference --process --mark --post-llm
+   uv run marker_app.py --download --reference --process --mark --post-llm
    ```
 
 2. **仅下载提交**：
    ```bash
-   python marker_app.py --download
+   uv run marker_app.py --download
    ```
 
 3. **处理和批改但不发布**：
    ```bash
-   python marker_app.py --process --mark
+   uv run marker_app.py --process --mark
    ```
 
 4. **使用自定义配置文件并设置日志级别**：
    ```bash
-   python marker_app.py -c ./my_custom_config.toml --download --process --mark --post-llm -l DEBUG
+   uv run marker_app.py -c ./my_custom_config.toml --download --process --mark --post-llm -l DEBUG
    ```
 
 5. **仅处理已下载的提交**：
    ```bash
-   python marker_app.py --reference --process
+   uv run marker_app.py --reference --process
    ```
 
 6. **人工校验后发布结果**：
    ```bash
-   python marker_app.py --post-human
+   uv run marker_app.py --post-human
    ```
 
 ### 一般工作流逻辑
@@ -138,7 +138,7 @@ python marker_app.py [--config path/to/config.toml] [步骤选项] [其他选项
 在使用前，请确保已经下载和处理了学生的提交，并生成了相应的日志文件。然后，在 [`src`](../) 目录下运行以下命令：
 
 ```bash
-python email_notifier.py --hw_id <作业ID> [选项]
+uv run email_notifier.py --hw_id <作业ID> [选项]
 ```
 
 ### 参数说明
@@ -155,23 +155,23 @@ python email_notifier.py --hw_id <作业ID> [选项]
 
 1. **测试模式**（查看邮件内容但不发送）：
    ```bash
-   python email_notifier.py --hw_id 1 --dry_run
+   uv run email_notifier.py --hw_id 1 --dry_run
    ```
 
    如果内容较多，也可以将输出保存到文件中：
    ```bash
-   python email_notifier.py --hw_id 1 --dry_run > email_content.txt
+   uv run email_notifier.py --hw_id 1 --dry_run > email_content.txt
    ```
    这样，邮件内容会保存在 `email_content.txt` 文件中。
 
 2. **发送邮件**：
    ```bash
-   python email_notifier.py --hw_id 1 --sender_email your_email@pku.edu.cn --sender_password your_password
+   uv run email_notifier.py --hw_id 1 --sender_email your_email@pku.edu.cn --sender_password your_password
    ```
 
 3. **使用自定义日志文件**：
    ```bash
-   python email_notifier.py --hw_id 1 --download_log custom_download.log --process_log custom_process.log --sender_email your_email@pku.edu.cn --sender_password your_password
+   uv run email_notifier.py --hw_id 1 --download_log custom_download.log --process_log custom_process.log --sender_email your_email@pku.edu.cn --sender_password your_password
    ```
 
 ### 邮件内容示例

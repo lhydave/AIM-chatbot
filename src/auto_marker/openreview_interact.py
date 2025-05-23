@@ -185,7 +185,7 @@ def process_source_code(
                 logger.warning(f"{filename} is not a binary file, skipping")
                 continue
             encoding = chardet.detect(content)
-            if encoding:
+            if encoding and encoding["encoding"]:
                 text_content = content.decode(encoding["encoding"])
             else:
                 text_content = content.decode("utf-8")
